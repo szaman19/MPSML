@@ -1,0 +1,38 @@
+We have presented two different methods for guided learning of the neural networks, one in which the landscape of the loss function is altered via an additional term $C_{2}$, the other in which the error term is directly modulated by an additional guiding function. To illustrate the differences in these methods and determine which method will result in faster learning, we want to consider a simple example. Consider a simple feed forward network with two input layer neurons $\vec{a}^0=(a^0_1, a^0, 2)^T$, which connect to a single output neuron $a^1$ via a weight vector $\vec{w}=(w_1, w_2)$ and an activation function $\sigma(z)$ such that
+\begin{equation}
+a^1_i=\sigma(z_i)
+\end{equation}
+with $z_i=w_{1}a^0_{1, i}+w_{2}a^0_{2, i}$ for the $i$th data point. A schematic diagram of this network can be seen in Fig.{\bf input a figure}. 
+
+Now, following the standard backpropagation algorithm, we can calculate the error in the output layer for each input data point $i$ as
+\begin{equation}
+\delta^{1}_i=\frac{\partial C}{\partial a^1_i}\sigma'(z_i)
+\end{equation}
+where $C$ is the loss function used and $\sigma'(z)$ is the derivative of the chosen activation function. Furthermore, after we iterate through the training set, we want to update the weight vector in accordance with this error. We do so as
+\begin{equation}
+\vec{w}=\vec{w}-\frac{\eta}{N}\sum_{i=1}^{N}\delta^{1}_{i}\vec{a}^0_i
+\end{equation}
+where $\eta$ is the prescribed learning rate and $N$ is the number of training data points. To distinguish which of our methods will learn at a faster rate, let's assume that there exists a set number of training epochs $M$ after which the network will be sufficiently trained. Thus, the initial weight vector $\vec{w}(0)$ will differ from the converged weight vector $\vec{w}(M)$ by a vector 
+\begin{equation}
+\vec{s}=\vec{w}(M)-\vec{w}(0)
+\end{equation}
+So, we can write the backpropagation of the error for the $m$th training epoch as
+\begin{equation}
+\label{w_m}
+\vec{w}(m+1)=\vec{w}(m)-\frac{\eta}{N}\sum_{i=1}^{N}\delta^{1}_{i}(m)\vec{a}^0_i,
+\end{equation}
+where $\delta^{1}_{i}(m)$ is calculated with respect to the output neuron value of during the $m$th training epoch $a^1_i(m)$. This means we can characterize the distance that the $m$th training epoch is from the converged result as
+\begin{equation}
+\vec{s}(m)=\vec{w}(M)-\vec{w}(m).
+\end{equation}
+A simple measure of the speed of training for the network thus could be found from $\Delta_{m}\vec{s}(m)$, the change in the difference vector as a function of $m$
+\begin{equation}
+\begin{split}
+\Delta_{m}\vec{s}(m)&=\Delta_{m}(\vec{w}(M)-\vec{w}(m))\\
+&=-\Delta_{m}\vec{w}(m) \\
+&=\frac{\eta}{N}\sum_{i=1}^{N}\delta^{1}_{i}(m)\vec{a}^0_i.
+\end{split}
+\end{equation}
+This indicates that the most important indicator of convergence speed will be the quality of the error function $\delta^1_i(m)$.
+
+{\bf Now, discuss the intracacies of the 3 different methods, BB, $C_2$, and $\delta$}

@@ -1,0 +1,13 @@
+#!/bin/bash 
+
+echo plotting...
+gnuplot scripts/$1.gnu
+
+echo compiling...
+pdflatex $1.tex > /dev/null
+
+echo sorting...
+mv $1.pdf figures 
+mv $1* build/
+
+echo done!

@@ -1,0 +1,55 @@
+\documentclass[prl,reprint,superscriptaddress]{revtex4-2}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, 
+	        linkcolor=blue, 
+			citecolor=blue, 
+			urlcolor=blue, 
+            pdfborderstyle={/S/U/W1}}
+
+\begin{document}
+
+
+\input{src/title}
+
+\input{src/authors}
+
+\date{\today}
+
+\input{src/abstract}
+
+\pacs{}
+
+\maketitle
+
+\textcolor{red}{\textit{Introduction}}
+\input{src/introduction}
+
+\textcolor{red}{\textit{Methods}}
+\input{src/methods}
+
+\textcolor{red}{\textit{Results}}
+\input{src/results}
+
+\textcolor{red}{\textit{Discussion}}
+\input{src/discussion}
+
+\textcolor{red}{\textit{Conclusion}}
+\input{src/conclusion}
+
+\textcolor{red}{\textit{Acknowledgments}}
+\begin{acknowledgments}
+\input{src/acknowledgments} 
+\end{acknowledgments}
+
+\appendix*
+\textcolor{red}{\textit{Appendix}}
+\input{src/appendix}
+
+
+\bibliography{src/references}
+
+\end{document}
