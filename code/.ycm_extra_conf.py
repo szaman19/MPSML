@@ -42,6 +42,7 @@ flags = [
     '-std=c++11',
     '-Iinc/datgen',
     '-Iinc/phynet',
+    '-I/opt/hdf5/include',
     '-I/usr/local/include/Eigen-3.3.7',
     '-I/usr/local/include/Eigen-3.3.7/unsupported'
 ]
