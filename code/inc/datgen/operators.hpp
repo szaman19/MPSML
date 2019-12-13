@@ -9,6 +9,7 @@
 
 #ifndef operators_hpp
 #define operators_hpp
+
 #include <iostream> 
 #include <vector>
 #include <Eigen/KroneckerProduct>
@@ -18,6 +19,8 @@
 class Fields
 {
 	public: 
+		Fields() {};
+
 		Fields(int num_qubits, double Bx, double W = 0, double Bz = 0.05, double J = 1.0)
 			: transverse(Bx), disorder_strength(W), longitudinal(Bz), coupling(J)
 		{
@@ -26,8 +29,8 @@ class Fields
 			std::uniform_real_distribution<double> dist(-W, W);
 
 			for (int i = 0; i < num_qubits; ++i) local_fields.push_back(dist(engine));
-			for (int i = 0; i < num_qubits; ++i) std::cout << local_fields[i] << '\t';
-			std::cout << '\n';
+			//for (int i = 0; i < num_qubits; ++i) std::cout << local_fields[i] << '\t';
+			//std::cout << '\n';
 		}
 
 		double transverse;
