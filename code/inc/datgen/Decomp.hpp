@@ -22,7 +22,7 @@ class Decomp
 		Decomp(int num_qubits, int num_transverse_fields, int num_disorder_realizations);
 
 
-	private:
+	//private:
 		std::vector<saes_t> wavefx;
 		std::vector<Fields> fields;
 };

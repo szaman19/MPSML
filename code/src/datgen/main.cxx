@@ -9,11 +9,14 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "Decomp.hpp"
 
 int main( /* int argc, char *argv[] */ )
 {
-	Decomp d(8, 1000, 10);	
+	Decomp d(4, 100, 10);	
+
+	std::cout << sizeof(d) << '\n';	
 
 	return 0;
 }
