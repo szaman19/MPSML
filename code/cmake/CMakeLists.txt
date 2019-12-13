@@ -23,11 +23,13 @@ include(CheckIncludeFileCXX)
 
 find_package(Git)
 find_package(Boost REQUIRED COMPONENTS random)
+find_package(HDF5 REQUIRED COMPONENTS CXX)
+include_directories(${HDF5_INCLUDE_DIRS})
+add_definitions(-DHFD5PP_EIGEN)
 
 #find_package(MPI REQUIRED)
 #find_package(CUDA REQUIRED)
 #find_package(OpenMP REQUIRED)
-#find_package(Eigen3 3.3 REQUIRED NO_MODULE PATHS /usr/local/include/Eigen-3.3.7/cmake)
 #find_package(ArrayFire REQUIRED PATHS /usr/local/include/arrayfire/share/ArrayFire/cmake)
 
 find_package(Eigen3 3.3.7 REQUIRED NO_MODULE) 
