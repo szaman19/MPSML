@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#SBATCH --job-name=4
+#SBATCH --partition=standard
+#SBATCH --ntasks=1
+#SBATCH --nodes=1
+#SBATCH --nodelist=europa
+#SBATCH --mail-type=END
+#SBATCH --mail-user=csingh5@binghamton.edu
+
+datgen.x 4 100000 1 4-qubits-clean.bin 
+datgen.x 4 10000 10 4-qubits-dirty.bin
