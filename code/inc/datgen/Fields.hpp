@@ -11,31 +11,27 @@
 #define Fields_hpp
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <random>
+#include <string>
 
 class Fields
 {
 	public: 
 		Fields() {};
 
-		Fields(int num_qubits, double Bx, double W = 0, double Bz = 0.05, double J = 1.0)
-			: transverse(Bx), disorder_strength(W), longitudinal(Bz), coupling(J)
-		{
-			std::random_device rd;
-			std::default_random_engine engine(rd());
-			std::uniform_real_distribution<double> dist(-W, W);
+		Fields(int num_qubits, double J, double Bx, double Bz, double W);
 
-			for (int i = 0; i < num_qubits; ++i) local_fields.push_back(dist(engine));
-			//for (int i = 0; i < num_qubits; ++i) std::cout << local_fields[i] << '\t';
-			//std::cout << '\n';
-		}
+		void append_to_file(std::string filename) const;
+		void read(std::string fpath, std::streampos pos = std::ios::beg);
 
-		double transverse;
-		double disorder_strength;
-		double longitudinal;
+		void print(void) const;
+
 		double coupling;
-
+		double transverse;
+		double longitudinal;
+		double disorder_strength;
 		std::vector<double> local_fields;
 };
 
