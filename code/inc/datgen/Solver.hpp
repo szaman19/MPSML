@@ -15,28 +15,43 @@
 #include <string>
 #include <Eigen/Dense>
 
-class Solver : public Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>
+template<typename T>
+using DenseMatrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
+template<typename T>
+class Solver : public Eigen::SelfAdjointEigenSolver<DenseMatrix<T>>
 {
 	public:
-		Solver(void) : Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>() {}
+		Solver(void) : Eigen::SelfAdjointEigenSolver<DenseMatrix<T>>() {}
 
-		Solver& operator=(const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& source)
+		Solver& operator=(const Eigen::SelfAdjointEigenSolver<DenseMatrix<T>>& source)
 		{
-			this->Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>::operator=(source);
+			this->Eigen::SelfAdjointEigenSolver<DenseMatrix<T>>::operator=(source);
 			return *this;
 		}
 
 		void append_to_file(std::string fpath) const;
 		void read(std::string fpath, std::streampos pos = std::ios::beg);
 		void print(void) const;
-
-		void reserve(int num_qubits)
-		{
-			int dim = (int)(pow(2, num_qubits) + 0.5);
-			this->compute(Eigen::MatrixXd::Identity(dim, dim));
-		}
 };
 
+template<typename T>
+void Solver<T>::append_to_file(std::string fpath) const
+{
+	std::ofstream file(fpath.c_str(), std::ios::app | std::ios::binary);
+
+	file.write((char*)this->eigenvalues().data(), this->eigenvalues().size() * sizeof(T));
+	file.write((char*)this->eigenvectors().data(), this->eigenvectors().size() * sizeof(T));
+}
+
+template<typename T>
+void Solver<T>::print(void) const 
+{
+	std::cout << "Eigenvalues:\n";
+	std::cout << this->eigenvalues().transpose() << "\n\n";
+	std::cout << "Eigenvectors:\n";
+	std::cout << this->eigenvectors() << "\n\n";
+}
 
 	
 #endif /* Solver_hpp */

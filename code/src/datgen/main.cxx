@@ -11,8 +11,11 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "Decomp.hpp"
+#include "Fields.hpp"
+#include "Generator.hpp"
 #include "Operators.hpp"
+#include <Eigen/Sparse>
+#include "Reader.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -50,11 +53,11 @@ int main(int argc, char *argv[])
 	a2 >> num_transverse_fields;
 	a3 >> num_disorder_realizations;
 
-	Decomp decomp(num_qubits, num_transverse_fields, num_disorder_realizations);	
+	Generator<float> generator(num_qubits, num_transverse_fields, num_disorder_realizations);	
 
-	decomp.compute();
+	generator.set_dump_location(argv[4]);
 
-	decomp.write(argv[4]);
+	generator.run();
 
 	return 0;
 }

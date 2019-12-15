@@ -56,12 +56,11 @@ add_executable(phynet.x
 	../../src/phynet/Topology.cxx)
 
 add_executable(datgen.x 
-	../../src/datgen/Decomp.cxx
+	../../src/datgen/Generator.cxx
 	../../src/datgen/Fields.cxx
 	../../src/datgen/Instance.cxx
 	../../src/datgen/main.cxx
 	../../src/datgen/Operators.cxx
-	../../src/datgen/pauli.cxx
 	../../src/datgen/Solver.cxx)
 
 target_link_libraries(phynet.x ${Boost_LIBRARIES} ${MKL_LIBRARIES})
