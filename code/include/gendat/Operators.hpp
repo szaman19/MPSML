@@ -156,16 +156,6 @@ Eigen::SparseMatrix<T> Operators<T>::magnetization(void) const
 }
 
 
-
-
-
-
-
-
-
-
-
-
 	
 #endif /* Operators_hpp */
 

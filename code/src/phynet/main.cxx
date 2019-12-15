@@ -7,12 +7,11 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-//#include "mpi.h"
 #include <numeric>
 #include <limits>
-#include "boost/circular_buffer.hpp"
-#include "Model.hpp"
-#include "Parser.hpp"
+#include <boost/circular_buffer.hpp>
+#include <phynet/Model.hpp>
+#include <phynet/Parser.hpp>
 
 int main( int argc, char *argv[] )
 {

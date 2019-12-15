@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Dataset.hpp"
+#include <phynet/Dataset.hpp>
 
 Dataset::Dataset(std::string input_path, std::size_t ibatch_size, std::string input_type)
 	:

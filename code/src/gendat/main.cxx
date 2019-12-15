@@ -11,11 +11,11 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "Fields.hpp"
-#include "Generator.hpp"
-#include "Operators.hpp"
 #include <Eigen/Sparse>
-#include "Reader.hpp"
+#include <gendat/Fields.hpp>
+#include <gendat/Generator.hpp>
+#include <gendat/Operators.hpp>
+#include <gendat/Reader.hpp>
 
 int main(int argc, char *argv[])
 {

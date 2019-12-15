@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Loss.hpp"
+#include <phynet/Loss.hpp>
 
 Loss::Loss(std::string loss, 
 		double lagrange_multiplier, 

@@ -35,6 +35,7 @@ class Solver : public Eigen::SelfAdjointEigenSolver<DenseMatrix<T>>
 		void print(void) const;
 };
 
+
 template<typename T>
 void Solver<T>::append_to_file(std::string fpath) const
 {
@@ -52,7 +53,6 @@ void Solver<T>::print(void) const
 	std::cout << "Eigenvectors:\n";
 	std::cout << this->eigenvectors() << "\n\n";
 }
-
 	
 #endif /* Solver_hpp */
 

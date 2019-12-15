@@ -1,11 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-//                         *** Gradient.hpp ***                              //
+//                        *** Solver.cxx ***                                 //
 //                                                                           //
-// created December 09, 2019                                                 //
+// created December 12, 2019                                                 //
 // copyright Christopher N. Singh Binghamton University Physics              //
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Gradient.hpp"
+#include <gendat/Solver.hpp>
+
 

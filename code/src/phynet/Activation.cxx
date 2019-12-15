@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Activation.hpp"
+#include <phynet/Activation.hpp>
 
 Activation::Activation(std::string activation_type)
 {

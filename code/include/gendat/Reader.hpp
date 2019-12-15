@@ -75,6 +75,7 @@ void Reader<T>::read(int instance)
 	std::cout << values[0].transpose() << "\n\n";	
 	std::cout << wavefx[0] << "\n\n";
 }
-	
+
+
 #endif /* Reader_hpp */
 

@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Network.hpp"
+#include <phynet/Network.hpp>
 
 Network::Network(const Topology &topology)
 {

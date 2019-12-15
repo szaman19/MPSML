@@ -80,6 +80,6 @@ void Fields<T>::append_to_file(std::string filename) const
 	file.write((char*)transverse.data(), transverse.size() * sizeof(T));
 	file.write((char*)longitudinal.data(), longitudinal.size() * sizeof(T));
 }
-	
+
 #endif /* Fields_hpp */
 

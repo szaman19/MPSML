@@ -12,7 +12,6 @@
 
 #include <string>
 #include <functional>
-#include "Gradient.hpp"
 #include "Network.hpp"
 
 typedef std::function<void(Network& network)> update_fcn_ptr;

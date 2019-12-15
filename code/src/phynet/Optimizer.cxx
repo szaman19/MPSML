@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Optimizer.hpp"
+#include <phynet/Optimizer.hpp>
 
 Optimizer::Optimizer(std::string optimizer_type, 
 		double learning_rate, 

@@ -50,7 +50,6 @@ void Instance<T>::print(void) const
 	fields.print();
 	wavefx.print();
 }
-
 	
 #endif /* Instance_hpp */
 

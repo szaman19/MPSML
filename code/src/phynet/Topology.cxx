@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Topology.hpp"
+#include <phynet/Topology.hpp>
 
 Topology::Topology(std::size_t batch_size_in)
 	:

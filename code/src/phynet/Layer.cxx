@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Layer.hpp"
+#include <phynet/Layer.hpp>
 
 void Layer::reserve(std::size_t neurons_in_this_layer, 
 	    		    std::size_t neurons_in_prev_layer,

@@ -9,7 +9,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Parser.hpp"
+#include <phynet/Parser.hpp>
 
 Parser::Parser(std::string inputfile) 
 {

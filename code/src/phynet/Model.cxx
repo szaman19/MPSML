@@ -7,7 +7,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "Model.hpp"
+#include <phynet/Model.hpp>
 		
 Model::Model(const Network& net, const Loss& loss, const Optimizer& optimizer) 
 	: m_net(net), m_loss(loss), m_optimizer(optimizer) 
