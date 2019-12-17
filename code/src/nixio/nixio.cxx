@@ -9,7 +9,7 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <phynet/nixio.hpp>
+#include <nixio/nixio.hpp>
 
 void get_streamline(std::ifstream &file, std::istringstream &streamline)
 {

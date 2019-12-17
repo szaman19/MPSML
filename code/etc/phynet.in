@@ -1,9 +1,4 @@
-input = fields
-instances = 60k
-epochs = 50
-chain = Ising
-qubits = 6
-sampling = dual
-optimizer = adadelta
-#cutout_option = false 
-write_average_magnetization = true
+chain = clean-Ising
+qubits = 4
+instances = 10000
+batch_size = 100

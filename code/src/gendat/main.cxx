@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 	a2 >> num_transverse_fields;
 	a3 >> num_disorder_realizations;
 
-	Generator<float> generator(num_qubits, num_transverse_fields, num_disorder_realizations);	
+	Generator<double> generator(num_qubits, num_transverse_fields, num_disorder_realizations);	
 
 	generator.set_dump_location(argv[4]);
 

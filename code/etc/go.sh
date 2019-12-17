@@ -1,16 +1,17 @@
 #!/bin/bash 
 
-rm -vf data/input/clean-Ising/*.bin
-rm -vf data/input/dirty-Ising/*.bin
+outc=/home/csingh5/Documents/guided-machine-learning/code/data/input/clean-Ising
+outd=/home/csingh5/Documents/guided-machine-learning/code/data/input/dirty-Ising
 
-srun --nodelist=europa time datgen.x 2 100000 1 data/input/clean-Ising/2-qubits.bin &
-srun --nodelist=europa time datgen.x 4 100000 1 data/input/clean-Ising/4-qubits.bin &
-srun --nodelist=europa time datgen.x 6 100000 1 data/input/clean-Ising/6-qubits.bin &
-srun --nodelist=europa time datgen.x 8 100000 1 data/input/clean-Ising/8-qubits.bin &
-srun --nodelist=europa time datgen.x 10 100000 1 data/input/clean-Ising/10-qubits.bin &
+rm -vf $outc/*.bin
+rm -vf $outd/*.bin
 
-srun --nodelist=europa time datgen.x 2 10000 10 data/input/dirty-Ising/2-qubits.bin &
-srun --nodelist=europa time datgen.x 4 10000 10 data/input/dirty-Ising/4-qubits.bin &
-srun --nodelist=europa time datgen.x 6 10000 10 data/input/dirty-Ising/6-qubits.bin &
-srun --nodelist=europa time datgen.x 8 10000 10 data/input/dirty-Ising/8-qubits.bin &
-srun --nodelist=europa time datgen.x 10 10000 10 data/input/dirty-Ising/10-qubits.bin &
+for i in {2,4,6,8,10}
+do
+	srun --nodelist=europa --job-name=clean-$i datgen.x $i 100000 1 $outc/$i-qubits.bin &
+done
+
+for i in {2,4,6,8,10}
+do
+	srun --nodelist=europa --job-name=dirty-$i datgen.x $i 10000 10 $outd/$i-qubits.bin &
+done

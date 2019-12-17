@@ -11,25 +11,26 @@
 #define Topology_hpp
 
 #include <vector>
-#include "Activation.hpp"
+#include <phynet/Activation.hpp>
 
+template <typename T>
 class Topology  
 {
 	public:
-		Topology(std::size_t batch_size);
+		Topology(int batch_size);
 
-		std::size_t num_layers(void) const;
-		std::size_t num_neurons_in_layer(std::size_t layer) const;
-		std::size_t batch_size(void) const;
+		int num_layers(void) const;
+		int num_neurons_in_layer(int layer) const;
+		int batch_size(void) const;
 
-		Activation activation(std::size_t layer) const;
+		Activation<T> activation(int layer) const;
 
-		void push_back(std::size_t neurons, Activation activations);
+		void push_back(int neurons, Activation<T> activations);
 
 	private:
-		std::size_t m_batch_size;
-		std::vector<std::size_t> m_neurons_per_layer;	
-		std::vector<Activation> m_activations;
+		int m_batch_size;
+		std::vector<int> m_neurons_per_layer;	
+		std::vector<Activation<T>> m_activations;
 };
 	
 #endif /* Topology_hpp */

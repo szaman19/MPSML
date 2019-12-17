@@ -10,32 +10,37 @@
 #ifndef Model_hpp
 #define Model_hpp
 
-#include "Network.hpp"
-#include "Loss.hpp"
-#include "Optimizer.hpp"
+#include <phynet/Network.hpp>
+#include <phynet/Loss.hpp>
+#include <phynet/Optimizer.hpp>
+#include <vector>
 
+template <typename T>
 class Model  
 {
 	public:
-		Model(const Network& network, const Loss& loss, const Optimizer& optimizer);
+		Model(const std::vector<Network<T>>& networks, const Loss<T>& loss, 
+			  const Optimizer<T>& optimizer);
 
-		void learn_from(const Dataset& dataset); 
-		double mse(const Dataset& dataset);
+		void learn_from(const Dataset<T>& dataset); 
 
-		void read(std::string filename);
-		void save(std::string filename);
+		T mse(const Dataset<T>& dataset);
 
-		void write_coefficients(const Dataset &dataset, std::string filename, int epoch);
-		void write_schrodinger_error(const Dataset &dataset, std::string filename, int epoch);
-		void write_lyapunov_estimate(const Dataset &dataset, std::string filename, int epoch);
-		void write_average_magnetization(const Dataset &dataset, std::string filename, int epoch);
+		T predictive_power(const Dataset<T>& dataset, int epoch);
+
+		//void read(std::string fpath);
+		//void save(std::string fpath);
+
+		//void write_coefficients(const Dataset<T> &dataset, std::string fpath, int epoch);
+		//void write_schrodinger_error(const Dataset<T> &dataset, std::string fpath, int epoch);
+		//void write_lyapunov_estimate(const Dataset<T> &dataset, std::string fpath, int epoch);
+		//void write_average_magnetization(const Dataset<T> &dataset, std::string fpath, int epoch);
 
 	private:
-		Network m_net;
-		Loss m_loss; 
-		Optimizer m_optimizer;		
+		std::vector<Network<T>> networks;
+		Loss<T> loss; 
+		Optimizer<T> optimizer;		
 };
-
 	
 #endif /* Model_hpp */
 

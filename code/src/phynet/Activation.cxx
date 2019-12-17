@@ -9,7 +9,8 @@
 
 #include <phynet/Activation.hpp>
 
-Activation::Activation(std::string activation_type)
+template <typename T>
+Activation<T>::Activation(std::string activation_type)
 {
 	if (activation_type == "linear")
 	{
@@ -45,48 +46,56 @@ Activation::Activation(std::string activation_type)
 	}
 }
 
-double Activation::relu_0(double x)
+template <typename T>
+T Activation<T>::relu_0(T x)
 {
 	if (x < 0) return 0;
 	else return x;
 }
 
-double Activation::relu_1(double x)
+template <typename T>
+T Activation<T>::relu_1(T x)
 {
 	if (x < 0) return 0;
 	else return 1;
 }
 
-double Activation::elu_0(double x)
+template <typename T>
+T Activation<T>::elu_0(T x)
 {
 	if (x < 0) return ELU_ALPHA * (std::exp(x) - 1);
 	else return x;
 }
 
-double Activation::elu_1(double x)
+template <typename T>
+T Activation<T>::elu_1(T x)
 {
 	if (x < 0) return ELU_ALPHA * std::exp(x);
 	else return 1;
 }
 
-double Activation::sigmoid_0(double x)
+template <typename T>
+T Activation<T>::sigmoid_0(T x)
 {
 	return 1.0 / (1.0 + std::exp(x));
 }
 
-double Activation::sigmoid_1(double x)
+template <typename T>
+T Activation<T>::sigmoid_1(T x)
 {
 	return sigmoid_0(x) * (1.0 - sigmoid_0(x));
 }
 
-double Activation::tanh_0(double x)
+template <typename T>
+T Activation<T>::tanh_0(T x)
 {
 	return std::tanh(x);
 	//return x * (10395.0 + 1260.0*x*x + 21.0*x*x*x*x) / 
 		//(10395.0 + 4725.0*x*x + 210.0*x*x*x*x + x*x*x*x*x*x);
 }
 
-double Activation::tanh_1(double x)
+template <typename T>
+T Activation<T>::tanh_1(T x)
 {
 	return 1.0 - std::tanh(x) * std::tanh(x);
 	//return 1.0 - tanh_0(x) * tanh_0(x);
@@ -100,12 +109,17 @@ double Activation::tanh_1(double x)
 			  //(x*x*x*x*x*x + 210.0*x*x*x*x + 4725.0*x*x + 10395.0) );
 }
 
-double Activation::linear_0(double x)
+template <typename T>
+T Activation<T>::linear_0(T x)
 {
 	return x;
 }
 
-double Activation::linear_1(double)
+template <typename T>
+T Activation<T>::linear_1(T)
 {
 	return 1;
 }
+
+template class Activation<float>;
+template class Activation<double>;

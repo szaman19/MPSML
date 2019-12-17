@@ -17,7 +17,7 @@
 #include <vector>
 #include <iterator>
 #include <map>
-#include "nixio.hpp"
+#include <nixio/nixio.hpp>
 
 class Parser
 {

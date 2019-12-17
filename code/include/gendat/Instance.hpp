@@ -30,26 +30,6 @@ class Instance
 		Solver<T> wavefx;
 };
 
-template <typename T>
-Instance<T>::Instance(const Fields<T>& field, const Solver<T>& solver) 
-	: fields(field), wavefx(solver)
-{
-	// null body
-}
-
-template <typename T>
-void Instance<T>::append_to_file(std::string fpath) const
-{
-	fields.append_to_file(fpath);	
-	wavefx.append_to_file(fpath);
-}
-
-template <typename T>
-void Instance<T>::print(void) const
-{
-	fields.print();
-	wavefx.print();
-}
 	
 #endif /* Instance_hpp */
 

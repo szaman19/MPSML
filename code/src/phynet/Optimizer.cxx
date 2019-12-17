@@ -9,10 +9,11 @@
 
 #include <phynet/Optimizer.hpp>
 
-Optimizer::Optimizer(std::string optimizer_type, 
-		double learning_rate, 
-		double decay_rate, 
-		double epsilon_conditioner)
+template <typename T>
+Optimizer<T>::Optimizer(std::string optimizer_type, 
+		T learning_rate, 
+		T decay_rate, 
+		T epsilon_conditioner)
 	: 
 		m_learning_rate(learning_rate), 
 		m_decay_rate(decay_rate), 
@@ -21,9 +22,10 @@ Optimizer::Optimizer(std::string optimizer_type,
 	set_update_pointer(optimizer_type);
 }
 
-void Optimizer::stochastic_gradient_descent(Network& net)
+template <typename T>
+void Optimizer<T>::stochastic_gradient_descent(Network<T>& net)
 {
-	double step_size = m_learning_rate / net.layers[0].states.cols();
+	T step_size = m_learning_rate / net.layers[0].states.cols();
 
 	for (std::size_t l = net.layers.size() - 1; l >= 1; --l)
 	{
@@ -35,7 +37,8 @@ void Optimizer::stochastic_gradient_descent(Network& net)
 	}	
 }
 
-void Optimizer::adaptive_delta(Network& net)
+template <typename T>
+void Optimizer<T>::adaptive_delta(Network<T>& net)
 {
 	if (!m_buffers_initialized)
 	{
@@ -50,9 +53,10 @@ void Optimizer::adaptive_delta(Network& net)
 	apply_update(net);
 }
 
-void Optimizer::compute_gradients(const Network& net)
+template <typename T>
+void Optimizer<T>::compute_gradients(const Network<T>& net)
 {
-	double step_size = m_learning_rate / net.layers[0].states.cols();
+	T step_size = m_learning_rate / net.layers[0].states.cols();
 
 	for (std::size_t l = net.layers.size() - 1; l >= 1; --l)
 	{
@@ -64,7 +68,8 @@ void Optimizer::compute_gradients(const Network& net)
 	}	
 }
 
-void Optimizer::accumulate_gradient(void)
+template <typename T>
+void Optimizer<T>::accumulate_gradient(void)
 {
 	for (std::size_t l = 1; l < m_gradients.layers.size(); ++l)
 	{
@@ -78,7 +83,8 @@ void Optimizer::accumulate_gradient(void)
 	}
 }
 
-void Optimizer::compute_update(void)
+template <typename T>
+void Optimizer<T>::compute_update(void)
 {
 	for (std::size_t l = 1; l < m_gradients.layers.size(); ++l)
 	{
@@ -94,7 +100,8 @@ void Optimizer::compute_update(void)
 	}
 }
 
-void Optimizer::accumulate_update(void)
+template <typename T>
+void Optimizer<T>::accumulate_update(void)
 {
 	for (std::size_t l = 1; l < m_gradients.layers.size(); ++l)
 	{
@@ -108,7 +115,8 @@ void Optimizer::accumulate_update(void)
 	}
 }
 
-void Optimizer::apply_update(Network& net)
+template <typename T>
+void Optimizer<T>::apply_update(Network<T>& net)
 {
 	for (std::size_t l = 1; l < m_gradients.layers.size(); ++l)
 	{
@@ -117,17 +125,18 @@ void Optimizer::apply_update(Network& net)
 	}
 }
 
-void Optimizer::set_update_pointer(std::string optimizer_type)
+template <typename T>
+void Optimizer<T>::set_update_pointer(std::string optimizer_type)
 {
 	using namespace std::placeholders;
 
 	if (optimizer_type == "sgd")
 	{
-		update = std::bind(&Optimizer::stochastic_gradient_descent, this, _1);
+		update = std::bind(&Optimizer<T>::stochastic_gradient_descent, this, _1);
 	}
 	else if (optimizer_type == "adadelta")
 	{
-		update = std::bind(&Optimizer::adaptive_delta, this, _1);
+		update = std::bind(&Optimizer<T>::adaptive_delta, this, _1);
 	}
 	else
 	{
@@ -139,7 +148,8 @@ void Optimizer::set_update_pointer(std::string optimizer_type)
 
 }
 
-void Optimizer::initialize_accumulation_buffers(const Network& net)
+template <typename T>
+void Optimizer<T>::initialize_accumulation_buffers(const Network<T>& net)
 {
 	m_updates = net;
 	m_gradients = net;
@@ -173,4 +183,5 @@ void Optimizer::initialize_accumulation_buffers(const Network& net)
 
 
 
-
+template class Optimizer<float>;
+template class Optimizer<double>;

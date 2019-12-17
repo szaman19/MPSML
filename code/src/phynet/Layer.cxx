@@ -9,9 +9,9 @@
 
 #include <phynet/Layer.hpp>
 
-void Layer::reserve(std::size_t neurons_in_this_layer, 
-	    		    std::size_t neurons_in_prev_layer,
-			   		std::size_t batch_size)
+template <typename T>
+void 
+Layer<T>::reserve(int neurons_in_this_layer, int neurons_in_prev_layer, int batch_size)
 {
 	weights.resize(neurons_in_this_layer, neurons_in_prev_layer);
 	biases.resize(neurons_in_this_layer, batch_size);
@@ -20,12 +20,14 @@ void Layer::reserve(std::size_t neurons_in_this_layer,
 	weighted_sum.resize(neurons_in_this_layer, batch_size);
 }
 
-long Layer::neurons_in_layer(void) const
+template <typename T>
+long Layer<T>::neurons_in_layer(void) const
 {
 	return states.rows();
 }
 
-void Layer::set_zero(void)
+template <typename T>
+void Layer<T>::set_zero(void)
 {
 	weights.setZero();
 	biases.setZero();
@@ -34,7 +36,8 @@ void Layer::set_zero(void)
 	weighted_sum.setZero();
 }
 
-void Layer::deep_copy(const Layer& source)
+template <typename T>
+void Layer<T>::deep_copy(const Layer<T>& source)
 {
 	this->weights = source.weights;
 	this->biases = source.biases;
@@ -43,7 +46,8 @@ void Layer::deep_copy(const Layer& source)
 	this->weighted_sum = source.weighted_sum;
 }
 
-Layer& Layer::operator=(const Layer& source)
+template <typename T>
+Layer<T>& Layer<T>::operator=(const Layer<T>& source)
 {
 	if (this == &source) return *this;
 
@@ -52,29 +56,19 @@ Layer& Layer::operator=(const Layer& source)
 	return *this;
 }
 
-void Layer::compute_states(void)
+template <typename T>
+void Layer<T>::compute_states(void)
 {
-	//af::array gpu_weighted_sum(weighted_sum.rows(), weighted_sum.cols(), weighted_sum.data());
-
-	//gpu_weighted_sum = af::tanh(gpu_weighted_sum);
-
-	//typedef Eigen::Map<Eigen::MatrixXd> emap;
-
-	//states = emap(gpu_weighted_sum.host<double>(), weighted_sum.rows(), weighted_sum.cols());
-
 	states = weighted_sum.unaryExpr(activation.activation);
 }
 
-Eigen::ArrayXXd Layer::derivative_of_activation_on_weighted_sum(void) const
+template <typename T>
+Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic>
+Layer<T>::derivative_of_activation_on_weighted_sum(void) const
 {
-	//af::array gpu_tmp(weighted_sum.rows(), weighted_sum.cols(), weighted_sum.data());
-
-	//gpu_tmp = 1 - af::tanh(gpu_tmp) * af::tanh(gpu_tmp);
-
-	//typedef Eigen::Map<Eigen::ArrayXXd> emap;
-
-	//return emap(gpu_tmp.host<double>(), weighted_sum.rows(), weighted_sum.cols());
-
 	return weighted_sum.unaryExpr(activation.derivative).array();
 }
+
+template class Layer<float>;
+template class Layer<double>;
 

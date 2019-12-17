@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16.0)
 
-project(phynet LANGUAGES CXX CUDA VERSION 1.0)
+project(phynet LANGUAGES CXX VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -33,9 +33,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 	include_directories(${MKL_INCLUDE_DIRS})
 endif()
 	
-include_directories(../include ../src)  
+include_directories(../include)  
 
-add_executable(phynet.x 
+add_library(nixio STATIC ../../src/nixio/nixio.cxx)
+
+add_executable(phynet.x
 	../../src/phynet/Activation.cxx  
 	../../src/phynet/Dataset.cxx  
 	../../src/phynet/Layer.cxx  
@@ -43,7 +45,6 @@ add_executable(phynet.x
 	../../src/phynet/main.cxx  
 	../../src/phynet/Model.cxx  
 	../../src/phynet/Network.cxx  
-	../../src/phynet/nixio.cxx  
 	../../src/phynet/Optimizer.cxx  
 	../../src/phynet/Parser.cxx  
 	../../src/phynet/Topology.cxx)
@@ -56,7 +57,7 @@ add_executable(gendat.x
 	../../src/gendat/Operators.cxx
 	../../src/gendat/Solver.cxx)
 
-target_link_libraries(phynet.x ${Boost_LIBRARIES} ${MKL_LIBRARIES})
+target_link_libraries(phynet.x nixio ${Boost_LIBRARIES} ${MKL_LIBRARIES})
 target_link_libraries(gendat.x ${Boost_LIBRARIES} ${MKL_LIBRARIES})
 
 #include_directories(../include ${EIGEN3_INCLUDE_DIRS} ${MKL_INCLUDE_DIRS} ${MPI_CXX_HEADER_DIR} ${ARRAY_FIRE_INCLUDE_DIRS}) 

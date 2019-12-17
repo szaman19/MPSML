@@ -13,28 +13,29 @@
 #include <cmath>
 #include <string>
 #include <functional>
-#include "nixio.hpp"
+#include <nixio/nixio.hpp>
 
 #define ELU_ALPHA 0.1
 
+template <typename T>
 class Activation  
 {
 	public:
 		Activation(std::string activation_type = "tanh");
 
-		std::function<double(double)> activation;
-		std::function<double(double)> derivative;
+		std::function<T(T)> activation;
+		std::function<T(T)> derivative;
 
-		static double sigmoid_0(double x);
-		static double sigmoid_1(double x);
-		static double linear_0(double x);
-		static double linear_1(double x);
-		static double tanh_0(double x);
-		static double tanh_1(double x);
-		static double relu_0(double x);
-		static double relu_1(double x);
-		static double elu_0(double x);
-		static double elu_1(double x);
+		static T sigmoid_0(T x);
+		static T sigmoid_1(T x);
+		static T linear_0(T x);
+		static T linear_1(T x);
+		static T tanh_0(T x);
+		static T tanh_1(T x);
+		static T relu_0(T x);
+		static T relu_1(T x);
+		static T elu_0(T x);
+		static T elu_1(T x);
 };
 
 	

@@ -11,60 +11,84 @@
 #define Dataset_hpp
 
 #include <vector>
-#include "Eigen/Dense"
-#include "nixio.hpp"
-#include "boost/random.hpp"
-#include "boost/random/random_device.hpp"
+#include <random>
+#include <algorithm>
+#include <Eigen/Dense>
+#include <nixio/nixio.hpp>
+#include <gendat/Fields.hpp>
 
-typedef Eigen::Map<const Eigen::MatrixXd> BatchMap;
+#define NUM_TOTAL_INSTANCES 100000
+#define PERCENT_TRAINING 0.8
+#define PERCENT_VALIDATION 0.1
+#define PERCENT_TESTING 0.1
+#define NUM_HAM_PARAM 3
 
+template <typename T>
+using Batch = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
+template <typename T>
+using Waves = std::vector<Batch<T>>;
+
+template <typename T>
 class Dataset  
 {
 	public:
-		Dataset(std::string input_path, std::size_t ibatch_size, std::string input_type);
+		Dataset(int num_qubits, std::string fpath, 
+				int batch_size = 10, int num_instances = NUM_TOTAL_INSTANCES);
 
-		Eigen::MatrixXd feature_batch(std::size_t batch) const;
-		Eigen::MatrixXd target_batch(std::size_t batch) const;
+		const Batch<T>& training_feature_batch(int batch) const;
+		const Batch<T>& validation_feature_batch(int batch) const;
+		const Batch<T>& testing_feature_batch(int batch) const;
 
-		std::size_t feature_length(void) const;
-		std::size_t target_length(void) const ;
-		std::size_t instances(void) const;
-		std::size_t batches(void) const;
-		std::size_t batch_size(void) const;
-		double energy(std::size_t instance) const;
+		const Batch<T>& training_target_batch(int batch, int iwavefx) const;
+		const Batch<T>& validation_target_batch(int batch, int iwavefx) const;
+		const Batch<T>& testing_target_batch(int batch, int iwavefx) const;
 
-		Eigen::MatrixXd hamiltonian(std::size_t instance) const;
-		Eigen::VectorXd wavefunction(std::size_t instance) const;
-		Eigen::VectorXd szdiag(void) const;
+		int feature_length(void) const;
+		int target_length(void) const ;
 
-		void generate_template_average_file(std::string filename) const;
+		int num_training_batches(void) const;
+		int num_validation_batches(void) const;
+		int num_testing_batches(void) const;
+		int num_eigenvectors(void) const;
+
+		int num_training_instances(void) const;
+		int num_validation_instances(void) const;
+		int num_testing_instances(void) const;
+
+		void import(int num_instances = NUM_TOTAL_INSTANCES);
+
 		void shuffle(void);
-		void print_info(void);
 
-		Eigen::VectorXd 
-		sparse_ham_times_vec(std::size_t instance, const Eigen::VectorXd &predicted_wavefx) const;
+		const int batch_size;
 		
-	protected:
-		void import(std::string input_path);
-		void set_topological_structure(void);
-		inline int tval(int potential_row_index, int dim) const;
+	private:
+		void allocate(void);
+		void init_pos(void);
 
-		std::string m_input_type;
-		
-		std::vector<int> m_header;
-		std::vector<int> m_matloc;
-		std::vector<double> m_fields;
-		std::vector<double> m_szdiag;
-		std::vector<double> m_matval;
-		std::vector<double> m_wavefx;
-		std::vector<double> m_energy;
+		void fill(int pos_lower_idx, int num_batches,
+				std::vector<Batch<T>>& fields_var, 
+				std::vector<Waves<T>>& wavefx_var);
 
-		std::size_t m_feature_length;
-		std::size_t m_target_length;
-		std::size_t m_batch_size;
+		int num_qubits, num_instances, dim;
 
-		std::vector<std::size_t> m_indices;
+		std::string fpath;
+
+		std::vector<std::streampos> pos;
+
+		std::vector<Batch<T>> training_fields;
+		std::vector<Waves<T>> training_wavefx;
+
+		std::vector<Batch<T>> validation_fields;
+		std::vector<Waves<T>> validation_wavefx;
+
+		std::vector<Batch<T>> testing_fields;
+		std::vector<Waves<T>> testing_wavefx;
 };
-	
+
+
+
+
+
 #endif /* Dataset_hpp */
 

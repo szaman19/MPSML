@@ -9,7 +9,8 @@
 
 #include <phynet/Network.hpp>
 
-Network::Network(const Topology &topology)
+template <typename T>
+Network<T>::Network(const Topology<T> &topology)
 {
 	if (topology.num_layers() < 2)
 	{
@@ -19,17 +20,17 @@ Network::Network(const Topology &topology)
 	}
 	else
 	{
-		std::size_t neurons_in_this_layer;
-		std::size_t neurons_in_prev_layer;
+		int neurons_in_this_layer;
+		int neurons_in_prev_layer;
 
-		for (std::size_t l = 0; l < topology.num_layers(); ++l)
+		for (int l = 0; l < topology.num_layers(); ++l)
 		{
 			neurons_in_this_layer = topology.num_neurons_in_layer(l);
 
 			if (l == 0) neurons_in_prev_layer = 1;
 			else neurons_in_prev_layer = topology.num_neurons_in_layer(l-1);
 
-			layers.push_back( Layer( topology.activation(l) ) );		
+			layers.push_back( Layer<T>( topology.activation(l) ) );		
 
 			layers.back().reserve(neurons_in_this_layer, 
 					              neurons_in_prev_layer, 
@@ -40,19 +41,22 @@ Network::Network(const Topology &topology)
 	init_biases();
 }
 
-void Network::init_weights()
+template <typename T>
+void Network<T>::init_weights()
 {
 	for (auto& layer : layers) layer.weights.setRandom();
 }
 
-void Network::init_biases(double value)
+template <typename T>
+void Network<T>::init_biases(T value)
 {
 	for (auto& layer : layers) layer.biases.fill(value);
 }
 
-void Network::validate_topology(const Dataset &dataset) const
+template <typename T>
+void Network<T>::validate_topology(const Dataset<T>& dataset) const
 {
-	if (layers[0].states.rows() != static_cast<long>(dataset.feature_length()))
+	if (layers[0].states.rows() != dataset.feature_length())
 	{
 		open_ascii_escape("red");
 		std::cerr << "\nERROR!: INPUTS INCOMMENSURATE WITH NETWORK TOPOLOGY\n";
@@ -68,10 +72,8 @@ void Network::validate_topology(const Dataset &dataset) const
 		close_ascii_escape();
 		exit(-1);
 	}
-	else if (static_cast<long>(dataset.target_length()) 
-			 != layers.back().states.rows() ||
-			 static_cast<long>(dataset.batch_size())
-			 != layers.back().states.cols())
+	else if (dataset.target_length() != layers.back().states.rows() ||
+			 dataset.batch_size != layers.back().states.cols())
 	{
 		open_ascii_escape("red");
 		std::cerr << "\nERROR!: TARGETS INCOMMENSURATE WITH NETWORK TOPOLOGY\n\n";
@@ -80,7 +82,9 @@ void Network::validate_topology(const Dataset &dataset) const
 	}
 }
 
-void Network::feedforward(const Eigen::MatrixXd &inputs)
+template <typename T>
+void Network<T>::
+feedforward(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& inputs)
 {
 	layers[0].states = inputs;
 
@@ -93,16 +97,18 @@ void Network::feedforward(const Eigen::MatrixXd &inputs)
 	}
 }
 
-void Network::backpropagate(void)
+template <typename T>
+void Network<T>::backpropagate(void)
 {
-	for (std::size_t l = layers.size() - 2; l >= 1; --l)
+	for (int l = layers.size() - 2; l >= 1; --l)
 	{
 		layers[l].errors = layers[l+1].weights.transpose() * layers[l+1].errors;
 		layers[l].errors.array() *= layers[l].derivative_of_activation_on_weighted_sum();
 	}	
 }
 
-Network& Network::operator=(const Network& source)
+template <typename T>
+Network<T>& Network<T>::operator=(const Network<T>& source)
 {
 	if (this == &source) return *this; 
 
@@ -111,7 +117,8 @@ Network& Network::operator=(const Network& source)
 	return *this;
 }
 
-void Network::deep_copy(const Network& source)
+template <typename T>
+void Network<T>::deep_copy(const Network<T>& source)
 {
 	this->layers.resize(source.layers.size());
 
@@ -119,7 +126,8 @@ void Network::deep_copy(const Network& source)
 		this->layers[i] = source.layers[i];
 }
 
-void Network::set_zero(void)
+template <typename T>
+void Network<T>::set_zero(void)
 {
 	for (std::size_t i = 0; i  < layers.size(); ++i)
 	{
@@ -127,15 +135,5 @@ void Network::set_zero(void)
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
+template class Network<float>;
+template class Network<double>;

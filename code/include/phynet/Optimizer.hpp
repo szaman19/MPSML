@@ -12,46 +12,47 @@
 
 #include <string>
 #include <functional>
-#include "Network.hpp"
+#include <phynet/Network.hpp>
 
-typedef std::function<void(Network& network)> update_fcn_ptr;
-
+template <typename T>
 class Optimizer  
 {
+	typedef std::function<void(Network<T>& network)> update_fcn_ptr;
+
 	public:
 		Optimizer(std::string optimizer_type,
-				double learning_rate = 0.1, 
-				double decay_rate = 0.90, 
-				double epsilon_conditioner = 1e-6);
+				T learning_rate = 0.1, 
+				T decay_rate = 0.90, 
+				T epsilon_conditioner = 1e-6);
 
 		update_fcn_ptr update;
 
-		void set_learning_rate(double value);
-		void set_decay_rate(double value);
-		void set_epsilon_conditioner(double value);
+		void set_learning_rate(T value);
+		void set_decay_rate(T value);
+		void set_epsilon_conditioner(T value);
 
 	private:
 		bool m_buffers_initialized = false;
-		double m_learning_rate;
-		double m_decay_rate; 
-		double m_epsilon_conditioner;
+		T m_learning_rate;
+		T m_decay_rate; 
+		T m_epsilon_conditioner;
 
 		void set_update_pointer(std::string optimizer_type);
 
-		void initialize_accumulation_buffers(const Network& network);
-		void compute_gradients(const Network& network);
+		void initialize_accumulation_buffers(const Network<T>& network);
+		void compute_gradients(const Network<T>& network);
 		void accumulate_gradient(void);
 		void compute_update(void);
 		void accumulate_update(void);
-		void apply_update(Network& network);
+		void apply_update(Network<T>& network);
 
-		Network m_gradients;
-		Network m_updates;
-		Network m_gradient_accumulator;
-		Network m_update_accumulator;
+		Network<T> m_gradients;
+		Network<T> m_updates;
+		Network<T> m_gradient_accumulator;
+		Network<T> m_update_accumulator;
 
-		void stochastic_gradient_descent(Network& network);
-		void adaptive_delta(Network& network);
+		void stochastic_gradient_descent(Network<T>& network);
+		void adaptive_delta(Network<T>& network);
 };
 
 	

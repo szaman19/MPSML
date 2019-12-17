@@ -9,10 +9,11 @@
 
 #include <phynet/Loss.hpp>
 
-Loss::Loss(std::string loss, 
-		double lagrange_multiplier, 
-		double trade_off_parameter,
-		double random_domain_bound)
+template <typename T>
+Loss<T>::Loss(std::string loss, 
+		T lagrange_multiplier, 
+		T trade_off_parameter,
+		T random_domain_bound)
 	: 
 		m_lagrange_multiplier(lagrange_multiplier), 
 		m_trade_off_parameter(trade_off_parameter), 
@@ -22,125 +23,138 @@ Loss::Loss(std::string loss,
 }
 
 
-void Loss::quadratic(Network& n, const Dataset& d, std::size_t batch)
+template <typename T>
+void Loss<T>::quadratic(Network<T>& n, const Batch<T>& target_batch)
 {
-	n.layers.back().errors = n.layers.back().states - d.target_batch(batch);
+	n.layers.back().errors = n.layers.back().states - target_batch;
 	n.layers.back().errors.array() *= n.layers.back().derivative_of_activation_on_weighted_sum();
 }
 
-void Loss::quadratic_plus_schrodinger(Network& n, const Dataset& d, std::size_t batch)
-{
-	std::size_t batch_shifted_instance;
-	Eigen::MatrixXd c2_error(d.target_length(), d.batch_size());
-	Eigen::VectorXd tmp(d.target_length());
-	int eigen_index;
-	double E;
+//template <typename T>
+//void Loss<T>::quadratic_plus_schrodinger(Network<T>& n, const Batch<T>& target_batch)
+//{
+	//int batch_shifted_instance;
+	//Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> 
+		//c2_error(d.target_length(), d.num_training_batches());
 
-	// calculate physics based cost from derivative w.r.t PSI
-	for (std::size_t instance = 0; instance < d.batch_size(); ++instance)
-	{
-		batch_shifted_instance = instance + batch * d.batch_size();
-		eigen_index = static_cast<std::size_t>(instance);
-
-		// tmp = H*PSI
-		tmp = d.sparse_ham_times_vec(batch_shifted_instance, 
-				n.layers.back().states.col(eigen_index));
-
-		E = d.energy(batch_shifted_instance);
-
-		c2_error.col(eigen_index) = 
-			d.sparse_ham_times_vec(batch_shifted_instance, tmp) +
-			n.layers.back().states.col(eigen_index) * E * E - 2 * tmp * E;
-	}
+	//Eigen::Matrix<T, Eigen::Dynamic, 1> tmp(d.target_length());
+	//int eigen_index;
 	
-	// grab quadratic errors 
-	n.layers.back().errors = n.layers.back().states - d.target_batch(batch);
+	//T E;
 
-	// add to quadratic errors the matrix derivative part of the schrodinger equation
-	n.layers.back().errors += m_lagrange_multiplier * c2_error; 
+	//// calculate physics based cost from derivative w.r.t PSI
+	//for (int instance = 0; instance < d.num_training_batches(); ++instance)
+	//{
+		//batch_shifted_instance = instance + batch * d.num_training_batches();
+		//eigen_index = static_cast<int>(instance);
 
-	// add chain rule effects
-	n.layers.back().errors.array() *= n.layers.back().derivative_of_activation_on_weighted_sum();
+		//// tmp = H*PSI
+		//tmp = d.sparse_ham_times_vec(batch_shifted_instance, 
+				//n.layers.back().states.col(eigen_index));
 
-}
+		//E = d.energy(batch_shifted_instance);
 
-void Loss::physics_perturbed_quadratic(Network& n, const Dataset& d, std::size_t batch)
-{
-	std::size_t batch_shifted_instance;
-	Eigen::MatrixXd perturbation(d.target_length(), d.batch_size());
-	int eigen_index;
+		//c2_error.col(eigen_index) = 
+			//d.sparse_ham_times_vec(batch_shifted_instance, tmp) +
+			//n.layers.back().states.col(eigen_index) * E * E - 2 * tmp * E;
+	//}
+	
+	//// grab quadratic errors 
+	//n.layers.back().errors = n.layers.back().states - d.training_target_batch(batch);
 
-	// calculate schrodinger error for each ground state in batch
-	for (std::size_t instance = 0; instance < d.batch_size(); ++instance)
-	{
-		batch_shifted_instance = instance + batch * d.batch_size();
-		eigen_index = static_cast<std::size_t>(instance);
+	//// add to quadratic errors the matrix derivative part of the schrodinger equation
+	//n.layers.back().errors += m_lagrange_multiplier * c2_error; 
+
+	//// add chain rule effects
+	//n.layers.back().errors.array() *= n.layers.back().derivative_of_activation_on_weighted_sum();
+
+//}
+
+//template <typename T>
+//void Loss<T>::physics_perturbed_quadratic(Network<T>& n, const Dataset<T>& d, int batch)
+//{
+	//int batch_shifted_instance;
+	//Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> 
+		//perturbation(d.target_length(), d.num_training_batches());
+
+	//int eigen_index;
+
+	//// calculate schrodinger error for each ground state in batch
+	//for (int instance = 0; instance < d.num_training_batches(); ++instance)
+	//{
+		//batch_shifted_instance = instance + batch * d.num_training_batches();
+		//eigen_index = static_cast<int>(instance);
 		
-		perturbation.col(eigen_index) =
-			d.sparse_ham_times_vec(batch_shifted_instance, n.layers.back().states.col(eigen_index))-
-			d.energy(batch_shifted_instance) * n.layers.back().states.col(eigen_index);
-	}
+		//perturbation.col(eigen_index) =
+			//d.sparse_ham_times_vec(batch_shifted_instance, n.layers.back().states.col(eigen_index))-
+			//d.energy(batch_shifted_instance) * n.layers.back().states.col(eigen_index);
+	//}
 	
-	// grab quadratic errors 
-	n.layers.back().errors = n.layers.back().states - d.target_batch(batch);
+	//// grab quadratic errors 
+	//n.layers.back().errors = n.layers.back().states - d.training_target_batch(batch);
 
-	// add chain rule effects
-	n.layers.back().errors.array() *= n.layers.back().derivative_of_activation_on_weighted_sum();
+	//// add chain rule effects
+	//n.layers.back().errors.array() *= n.layers.back().derivative_of_activation_on_weighted_sum();
 
-	// add perturbation outside normal gradient term
-	n.layers.back().errors += m_trade_off_parameter * perturbation;
-}
+	//// add perturbation outside normal gradient term
+	//n.layers.back().errors += m_trade_off_parameter * perturbation;
+//}
 
-void Loss::randomly_perturbed_quadratic(Network& n, const Dataset& d, std::size_t batch)
-{
-	Eigen::MatrixXd perturbation(d.target_length(), d.batch_size());
+//template <typename T>
+//void Loss<T>::randomly_perturbed_quadratic(Network<T>& n, const Dataset<T>& d, int batch)
+//{
+	//Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> perturbation(d.target_length(), d.num_training_batches());
 
-	perturbation.setRandom();
+	//perturbation.setRandom();
 	
-	// grab quadratic errors 
-	n.layers.back().errors = n.layers.back().states - d.target_batch(batch);
+	//// grab quadratic errors 
+	//n.layers.back().errors = n.layers.back().states - d.training_target_batch(batch);
 
-	// add chain rule effects
-	n.layers.back().errors.array() *= n.layers.back().derivative_of_activation_on_weighted_sum();
+	//// add chain rule effects
+	//n.layers.back().errors.array() *= n.layers.back().derivative_of_activation_on_weighted_sum();
 
-	// add perturbation
-	n.layers.back().errors += m_random_domain_bound * perturbation;
-}
+	//// add perturbation
+	//n.layers.back().errors += m_random_domain_bound * perturbation;
+//}
 
-void Loss::set_lagrange_multiplier(double value)
+template <typename T>
+void Loss<T>::set_lagrange_multiplier(T value)
 {
 	m_lagrange_multiplier = value;
 }
 
-void Loss::set_trade_off_parameter(double value)
+template <typename T>
+void Loss<T>::set_trade_off_parameter(T value)
 {
 	m_trade_off_parameter = value;
 }
 
-void Loss::set_random_domain_bound(double value)
+template <typename T>
+void Loss<T>::set_random_domain_bound(T value)
 {
 	m_random_domain_bound = value;
 }
 
-void Loss::set_compute_pointer(std::string loss)
+template <typename T>
+void Loss<T>::set_compute_pointer(std::string loss)
 {
 	using namespace std::placeholders;
 	if (loss == "bb")
 	{
-		compute = std::bind(&Loss::quadratic, this, _1, _2, _3);
+		compute = std::bind(&Loss<T>::quadratic, this, _1, _2);
 	}
-	else if (loss == "c2")
-	{
-		compute = std::bind(&Loss::quadratic_plus_schrodinger, this, _1, _2, _3);
-	}
-	else if (loss == "pg")
-	{
-		compute = std::bind(&Loss::physics_perturbed_quadratic, this, _1, _2, _3);
-	}
-	else if (loss == "rd")
-	{
-		compute = std::bind(&Loss::randomly_perturbed_quadratic, this, _1, _2, _3);
-	}
+	//else if (loss == "c2")
+	//{
+		//compute = std::bind(&Loss<T>::quadratic_plus_schrodinger, this, _1, _2);
+	//}
+	//else if (loss == "pg")
+	//{
+		//compute = std::bind(&Loss<T>::physics_perturbed_quadratic, this, _1, _2);
+	//}
+	//else if (loss == "rd")
+	//{
+		//compute = std::bind(&Loss<T>::randomly_perturbed_quadratic, this, _1, _2);
+	//}
 	else
 	{
 		open_ascii_escape("red");
@@ -149,3 +163,6 @@ void Loss::set_compute_pointer(std::string loss)
 		exit(-1);
 	}
 }
+
+template class Loss<float>;
+template class Loss<double>;

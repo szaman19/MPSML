@@ -12,6 +12,23 @@
 #include <boost/circular_buffer.hpp>
 #include <phynet/Model.hpp>
 #include <phynet/Parser.hpp>
+#include <phynet/Dataset.hpp>
+#include <string>
+
+//int main()
+//{
+	//int num_qubits = 4;
+	//int batch_size = 100;
+
+	//std::string N = std::to_string(num_qubits);
+
+	//std::string root = "/home/csingh5/Documents/guided-machine-learning/code/data/";
+	//std::string fpath = root + "input/clean-Ising/" + N + "-qubits.bin";
+
+	//Dataset<double> data(num_qubits, fpath, batch_size);
+
+	//return 0;
+//}
 
 int main( int argc, char *argv[] )
 {
@@ -90,6 +107,10 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("seed").empty() ?
 		0 : std::atoi(parser.value_of_key("seed").c_str());
 	
+	const int instances = 
+		parser.value_of_key("instances").empty() ?
+		100000 : std::atoi(parser.value_of_key("instances").c_str());
+	
 	const std::string target_activation_type = 
 		parser.value_of_key("target_activation").empty() ? 
 		"tanh" : parser.value_of_key("target_activation");
@@ -99,38 +120,34 @@ int main( int argc, char *argv[] )
 		5e-3 : std::atof(parser.value_of_key("validation_threshold").c_str());
 
 	// required inputs
-	const std::string input_type = parser.value_of_key("input");
 	const std::string chain = parser.value_of_key("chain") + "/";
-	const std::string qubits = parser.value_of_key("qubits") + "-qubits/";
-	const std::string instances = parser.value_of_key("instances") + "-instances/";
-	const std::string sampling = parser.value_of_key("sampling") + "-phase/";
+	const std::string qubits = parser.value_of_key("qubits");
 
+	// derived inputs
 	const std::string input_root = data_root + "/input/";
 	const std::string output_root = data_root + "/output/";
-	const std::string base_input_dir = input_root + chain + qubits + instances + sampling;
-	const std::string base_output_dir = output_root + chain + qubits + instances + sampling;
+	const std::string base_input_dir = input_root + chain;
+	const std::string base_output_dir = output_root + chain;
 	
-	const std::string training_path = base_input_dir + "training/";
-	const std::string testing_path = base_input_dir + "testing/";
-	const std::string validation_path = base_input_dir + "validation/";
+	const std::string data_path = base_input_dir + qubits + "-qubits.bin";
 
-	Dataset training_data(training_path, batch_size, input_type);
-	Dataset testing_data(testing_path, batch_size, input_type);
-	Dataset validation_data(validation_path, batch_size, input_type);
+	std::cout << data_path << '\n';
+
+	Dataset<float> dataset(std::atoi(qubits.c_str()), data_path, batch_size, instances);
 
 	// technically shouldn't have to run this everytime, but its harmless and guarantees existance 
-	training_data.generate_template_average_file(base_output_dir+"training/avg-sz-exact.dat");
-	testing_data.generate_template_average_file(base_output_dir+"testing/avg-sz-exact.dat");
-	validation_data.generate_template_average_file(base_output_dir+"validation/avg-sz-exact.dat");
+	//training_data.generate_template_average_file(base_output_dir+"training/avg-sz-exact.dat");
+	//testing_data.generate_template_average_file(base_output_dir+"testing/avg-sz-exact.dat");
+	//validation_data.generate_template_average_file(base_output_dir+"validation/avg-sz-exact.dat");
+	
+	const std::size_t input_layer_size = dataset.feature_length();
+	const std::size_t output_layer_size = dataset.target_length();
 
-	const std::size_t input_layer_size = training_data.feature_length();
-	const std::size_t output_layer_size = training_data.target_length();
+	Activation<float> input_activation("linear");
+	Activation<float> hidden_activation(hidden_activation_type);
+	Activation<float> target_activation(target_activation_type);
 
-	Activation input_activation("linear");
-	Activation hidden_activation(hidden_activation_type);
-	Activation target_activation(target_activation_type);
-
-	Topology topology(batch_size);
+	Topology<float> topology(batch_size);
 	topology.push_back(input_layer_size, input_activation);
 
 	for (std::size_t i = 0; i < num_hidden_layers; ++i) 
@@ -139,49 +156,55 @@ int main( int argc, char *argv[] )
 	topology.push_back(output_layer_size, target_activation);
 
 	srand(static_cast<unsigned int>(seed));
-	Network network(topology);
+	Network<float> network(topology);
+	network.validate_topology(dataset);
 
-	network.validate_topology(training_data);
-	network.validate_topology(testing_data);
-	network.validate_topology(validation_data);
+	std::vector<Network<float>> networks;
 
-	Loss loss(loss_type, lagrange_multiplier, trade_off_parameter);
-	Optimizer optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
+	for (int i = 0; i < dataset.num_eigenvectors(); ++i) networks.push_back(network);
 
-	Model model(network, loss, optimizer);
+	Loss<float> loss(loss_type, lagrange_multiplier, trade_off_parameter);
+	Optimizer<float> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
 
-	std::ofstream mse_stream(base_output_dir + "mse-" + loss_type + ".dat", std::ofstream::trunc);
-	boost::circular_buffer<double> mse_history(memory_window);
+	Model<float> model(networks, loss, optimizer);
 
-	for (std::size_t i = 0; i < memory_window; ++i)
-		mse_history.push_back(std::numeric_limits<double>::max());
+	//std::ofstream mse_stream(base_output_dir + "mse-" + loss_type + ".dat", std::ofstream::trunc);
+	//boost::circular_buffer<double> mse_history(memory_window);
 
-	double cutout_value, training_mse, testing_mse, inactive_value;
-	std::vector<double> activities(memory_window);
+	//for (std::size_t i = 0; i < memory_window; ++i)
+		//mse_history.push_back(std::numeric_limits<double>::max());
 
-	std::cout << "#Epoch   Training      Testing      Validation\n";
-	std::cout << std::scientific;
+	//double cutout_value, training_mse, testing_mse, inactive_value;
+	//std::vector<double> activities(memory_window);
+
+	//std::cout << "#Epoch   Training      Testing      Validation\n";
+	//std::cout << std::scientific;
 	
-	mse_stream << "#Epoch   Training      Testing      Validation\n";
-	mse_stream << std::scientific;
+	//mse_stream << "#Epoch   Training      Testing      Validation\n";
+	//mse_stream << std::scientific;
+
+	//std::cout << "Epoch \t MSE \t PredP \n";
+
+	double cutout_value = 1e6;
+	double inactive_value = 1e6;
 
 	for (std::size_t epoch = 0; epoch <= epochs; ++epoch)
 	{
-		mse_history.push_back(model.mse(validation_data));
-		training_mse = model.mse(training_data);
-		testing_mse = model.mse(testing_data);
+		//mse_history.push_back(model.mse(validation_data));
+		//training_mse = model.mse(training_data);
+		//testing_mse = model.mse(testing_data);
 
-		std::adjacent_difference(
-				mse_history.begin(), 
-				mse_history.end(), 
-				activities.data(),
-				[](double x, double y){return std::abs(x-y);});
+		//std::adjacent_difference(
+				//mse_history.begin(), 
+				//mse_history.end(), 
+				//activities.data(),
+				//[](double x, double y){return std::abs(x-y);});
 
-		inactive_value = std::accumulate(activities.begin() + 1, activities.end(), 0.0);
-	    inactive_value /= memory_window;
+		//inactive_value = std::accumulate(activities.begin() + 1, activities.end(), 0.0);
+		//inactive_value /= memory_window;
 
-		cutout_value = std::accumulate(mse_history.begin(), mse_history.end(), 0.0);
-		cutout_value /= memory_window;
+		//cutout_value = std::accumulate(mse_history.begin(), mse_history.end(), 0.0);
+		//cutout_value /= memory_window;
 
 		if (cutout_option == "true" && cutout_value < validation_threshold) 
 		{
@@ -200,39 +223,42 @@ int main( int argc, char *argv[] )
 		}
 		else
 		{
-			std::cout << epoch << '\t' << training_mse << '\t'
-				<< testing_mse << '\t' << mse_history.back() << std::endl;
+			//std::cout << epoch << '\t' << training_mse << '\t'
+				//<< testing_mse << '\t' << mse_history.back() << std::endl;
 			
-			mse_stream<< epoch << '\t' << training_mse << '\t'
-				<< testing_mse << '\t' << mse_history.back() << std::endl;
+			//mse_stream<< epoch << '\t' << training_mse << '\t'
+				//<< testing_mse << '\t' << mse_history.back() << std::endl;
 
 		
-			if (parser.value_of_key("write_average_magnetization") == "true")
-				model.write_average_magnetization(testing_data, 
-						base_output_dir + "testing/avg-" + loss_type, epoch);
+			//if (parser.value_of_key("write_average_magnetization") == "true")
+				//model.write_average_magnetization(testing_data, 
+						//base_output_dir + "testing/avg-" + loss_type, epoch);
 
-			if (parser.value_of_key("write_coefficients") == "true")
-				model.write_coefficients(testing_data, 
-						base_output_dir + "testing/coe-" + loss_type, epoch);
+			//if (parser.value_of_key("write_coefficients") == "true")
+				//model.write_coefficients(testing_data, 
+						//base_output_dir + "testing/coe-" + loss_type, epoch);
 
-			if (parser.value_of_key("write_lyapunov_estimate") == "true") 
-				model.write_lyapunov_estimate(testing_data, 
-						base_output_dir + "testing/lya-" + loss_type, epoch);
+			//if (parser.value_of_key("write_lyapunov_estimate") == "true") 
+				//model.write_lyapunov_estimate(testing_data, 
+						//base_output_dir + "testing/lya-" + loss_type, epoch);
 
-			if (parser.value_of_key("write_schrodinger_error") == "true")
-				model.write_schrodinger_error(testing_data, 
-						base_output_dir + "testing/sch-" + loss_type, epoch);
+			//if (parser.value_of_key("write_schrodinger_error") == "true")
+				//model.write_schrodinger_error(testing_data, 
+						//base_output_dir + "testing/sch-" + loss_type, epoch);
+						
+			std::cout << epoch << '\t' << model.mse(dataset) 
+					  << '\t' << model.predictive_power(dataset, epoch) << std::endl;
 
-			model.learn_from(training_data);
+			model.learn_from(dataset);
 
-			if (parser.value_of_key("shuffle") == "true")
-				training_data.shuffle();
+			//if (parser.value_of_key("shuffle") == "true")
+				//training_data.shuffle();
 		}
 
 	}
 
-	if (parser.value_of_key("save_model") == "true") 
-		model.save(base_output_dir + loss_type + "-model.net");
+	//if (parser.value_of_key("save_model") == "true") 
+		//model.save(base_output_dir + loss_type + "-model.net");
 
 
 	return 0;
@@ -260,6 +286,6 @@ int main( int argc, char *argv[] )
 	//for (int i = 0; i < trials; ++i) a2 = matmul(a1,a1);
 	//std::cout << "GPU runtime : " << af::timer::stop()/trials << " seconds\n";
 	   
-	//Eigen::Map<Eigen::MatrixXf> res(a2.host<float>(), N, N);
+	//Eigen::Map<Eigen::MatrixXf> res(a2.host<double>(), N, N);
 	//if (res.isApprox(e2)) std::cout << "CPU and GPU agree\n";
 	//else std::cout << "CPU and GPU disagree\n";
