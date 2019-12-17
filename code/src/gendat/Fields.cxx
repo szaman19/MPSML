@@ -55,6 +55,5 @@ void Fields<T>::append_to_file(std::string filename) const
 	file.write((char*)longitudinal.data(), longitudinal.size() * sizeof(T));
 }
 
-template class Fields<float>;
 template class Fields<double>;
 

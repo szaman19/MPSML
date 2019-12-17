@@ -1,4 +1,4 @@
 chain = clean-Ising
 qubits = 4
 instances = 10000
-batch_size = 100
+batch_size = 10

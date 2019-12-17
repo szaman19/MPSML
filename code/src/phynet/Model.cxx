@@ -45,30 +45,30 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 					networks[vec].layers.back().states.col(instance).norm();
 			}
 
-			if (epoch != 0 && epoch % 100 == 0)
-			{
-				std::cout << "##### EPOCH: " << epoch << " BATCH: " << batch << " INSTANCE: " << instance << " TARGS #####\n";
-				std::cout << normalized_targs << "\n\n";
-				
-				open_ascii_escape("blue");
-				std::cout << "##### EPOCH: " << epoch << " BATCH: " << batch << " INSTANCE: " << instance << " PREDS #####\n";
-				std::cout << normalized_preds << "\n\n";
-				close_ascii_escape();
-			}
-			
-			//Eigen::SelfAdjointEigenSolver<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> 
-				//saes(normalized_preds.transpose() * normalized_targs);
-			
-
-			//if (instance == 0 && batch == 0 && epoch % 10 == 0)
+			//if (epoch != 0 && epoch % 100 == 0)
 			//{
-				////std::cout << "\n\n" << normalized_preds.transpose() * normalized_targs << "\n\n";
-
-				//std::cout << "\n\n" << saes.eigenvalues() << "\n\n" << 
-					//std::sqrt(saes.eigenvalues().array().square().sum())/std::sqrt(dim) << "\n\n";
+				//std::cout << "##### EPOCH: " << epoch << " BATCH: " << batch << " INSTANCE: " << instance << " TARGS #####\n";
+				//std::cout << normalized_targs << "\n\n";
+				
+				//open_ascii_escape("blue");
+				//std::cout << "##### EPOCH: " << epoch << " BATCH: " << batch << " INSTANCE: " << instance << " PREDS #####\n";
+				//std::cout << normalized_preds << "\n\n";
+				//close_ascii_escape();
 			//}
+			
+			Eigen::SelfAdjointEigenSolver<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> 
+				saes(normalized_preds.transpose() * normalized_targs);
+			
 
-			//out += (normalized_preds.transpose() * normalized_targs).norm();
+			if (instance == 0 && batch == 0 && epoch % 10 == 0)
+			{
+				std::cout << "\n\n" << normalized_targs.transpose() * normalized_targs << "\n\n";
+
+				std::cout << "\n\n" << saes.eigenvalues().transpose() << "\n\n" << 
+					std::sqrt(saes.eigenvalues().array().square().sum())/std::sqrt(dim) << "\n\n";
+			}
+
+			out += std::sqrt((normalized_preds.transpose() * normalized_targs).array().square().sum());
 		}
 	}
 
