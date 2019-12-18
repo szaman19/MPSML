@@ -48,5 +48,4 @@ Activation<T> Topology<T>::activation(int layer) const
 	return m_activations[layer];
 }
 
-template class Topology<float>;
 template class Topology<double>;

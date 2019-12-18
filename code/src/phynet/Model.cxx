@@ -56,19 +56,39 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 				//close_ascii_escape();
 			//}
 			
-			Eigen::SelfAdjointEigenSolver<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> 
-				saes(normalized_preds.transpose() * normalized_targs);
+			auto pretty_print = [](const Eigen::MatrixXd& mat) -> void 
+			{
+				std::cout << std::endl;
+				std::cout << std::endl;
+				for (int i = 0; i < mat.rows(); ++i)
+				{
+					for (int j = 0; j < mat.cols(); ++j)
+					{
+						std::cout << std::fixed << std::setprecision(4) << std::setw(9) << std::right;
+						if (std::abs(mat(i,j)) == mat.col(j).cwiseAbs().maxCoeff()) 
+						{
+							open_ascii_escape("yellow");
+							std::cout << mat(i,j);	
+							close_ascii_escape();
+						}
+						else
+						{
+							std::cout << mat(i,j);
+							close_ascii_escape();
+						}
+					}
+					std::cout << std::endl;
+				}
+				std::cout << std::endl;;
+			};
 			
 
-			if (instance == 0 && batch == 0 && epoch % 10 == 0)
+			if (instance == 0 && batch == 0 && epoch % 10 == 0 && epoch != 0)
 			{
-				std::cout << "\n\n" << normalized_targs.transpose() * normalized_targs << "\n\n";
-
-				std::cout << "\n\n" << saes.eigenvalues().transpose() << "\n\n" << 
-					std::sqrt(saes.eigenvalues().array().square().sum())/std::sqrt(dim) << "\n\n";
+				pretty_print(normalized_preds.transpose() * normalized_targs);
 			}
 
-			out += std::sqrt((normalized_preds.transpose() * normalized_targs).array().square().sum());
+			//out += (normalized_preds.transpose() * normalized_targs).norm();
 		}
 	}
 
@@ -423,5 +443,4 @@ T Model<T>::mse(const Dataset<T>& dataset)
 	//}
 //}
 
-template class Model<float>;
 template class Model<double>;

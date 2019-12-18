@@ -183,5 +183,4 @@ void Optimizer<T>::initialize_accumulation_buffers(const Network<T>& net)
 
 
 
-template class Optimizer<float>;
 template class Optimizer<double>;

@@ -118,11 +118,10 @@ Eigen::SparseMatrix<T> Operators<T>::magnetization(void) const
 {
 	Eigen::SparseMatrix<T> tmp = longitudinal_stencils[0];
 
-	for (int i = 1; i < longitudinal_stencils.size(); ++i)
+	for (std::size_t i = 1; i < longitudinal_stencils.size(); ++i)
 		tmp += longitudinal_stencils[i];
 
 	return tmp;
 }
 
-template class Operators<float>;
 template class Operators<double>;

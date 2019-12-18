@@ -121,5 +121,4 @@ T Activation<T>::linear_1(T)
 	return 1;
 }
 
-template class Activation<float>;
 template class Activation<double>;

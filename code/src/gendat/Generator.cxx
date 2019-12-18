@@ -95,5 +95,4 @@ void Generator<T>::prompt_if_file(std::string fpath) const
 	}
 }
 
-template class Generator<float>;
 template class Generator<double>;

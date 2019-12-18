@@ -135,5 +135,4 @@ void Network<T>::set_zero(void)
 	}
 }
 
-template class Network<float>;
 template class Network<double>;

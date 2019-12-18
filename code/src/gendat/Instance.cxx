@@ -30,5 +30,4 @@ void Instance<T>::print(void) const
 	wavefx.print();
 }
 
-template class Instance<float>;
 template class Instance<double>;

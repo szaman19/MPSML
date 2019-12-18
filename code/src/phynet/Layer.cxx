@@ -69,6 +69,5 @@ Layer<T>::derivative_of_activation_on_weighted_sum(void) const
 	return weighted_sum.unaryExpr(activation.derivative).array();
 }
 
-template class Layer<float>;
 template class Layer<double>;
 

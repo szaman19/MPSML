@@ -220,5 +220,4 @@ const Batch<T>& Dataset<T>::testing_target_batch(int batch, int iwavefx) const
 	return testing_wavefx[batch][iwavefx];
 }
 
-template class Dataset<float>;
 template class Dataset<double>;

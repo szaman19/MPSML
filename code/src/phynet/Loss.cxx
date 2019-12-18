@@ -164,5 +164,4 @@ void Loss<T>::set_compute_pointer(std::string loss)
 	}
 }
 
-template class Loss<float>;
 template class Loss<double>;

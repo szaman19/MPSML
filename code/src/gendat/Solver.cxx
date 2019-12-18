@@ -28,5 +28,4 @@ void Solver<T>::print(void) const
 }
 
 
-template class Solver<float>;
 template class Solver<double>;

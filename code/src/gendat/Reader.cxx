@@ -51,5 +51,4 @@ void Reader<T>::read(int instance)
 	std::cout << wavefx[0] << "\n\n";
 }
 
-template class Reader<float>;
 template class Reader<double>;

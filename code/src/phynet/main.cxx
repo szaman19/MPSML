@@ -133,7 +133,7 @@ int main( int argc, char *argv[] )
 
 	std::cout << data_path << '\n';
 
-	Dataset<float> dataset(std::atoi(qubits.c_str()), data_path, batch_size, instances);
+	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size, instances);
 
 	// technically shouldn't have to run this everytime, but its harmless and guarantees existance 
 	//training_data.generate_template_average_file(base_output_dir+"training/avg-sz-exact.dat");
@@ -143,11 +143,11 @@ int main( int argc, char *argv[] )
 	const std::size_t input_layer_size = dataset.feature_length();
 	const std::size_t output_layer_size = dataset.target_length();
 
-	Activation<float> input_activation("linear");
-	Activation<float> hidden_activation(hidden_activation_type);
-	Activation<float> target_activation(target_activation_type);
+	Activation<double> input_activation("linear");
+	Activation<double> hidden_activation(hidden_activation_type);
+	Activation<double> target_activation(target_activation_type);
 
-	Topology<float> topology(batch_size);
+	Topology<double> topology(batch_size);
 	topology.push_back(input_layer_size, input_activation);
 
 	for (std::size_t i = 0; i < num_hidden_layers; ++i) 
@@ -156,17 +156,17 @@ int main( int argc, char *argv[] )
 	topology.push_back(output_layer_size, target_activation);
 
 	srand(static_cast<unsigned int>(seed));
-	Network<float> network(topology);
+	Network<double> network(topology);
 	network.validate_topology(dataset);
 
-	std::vector<Network<float>> networks;
+	std::vector<Network<double>> networks;
 
 	for (int i = 0; i < dataset.num_eigenvectors(); ++i) networks.push_back(network);
 
-	Loss<float> loss(loss_type, lagrange_multiplier, trade_off_parameter);
-	Optimizer<float> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
+	Loss<double> loss(loss_type, lagrange_multiplier, trade_off_parameter);
+	Optimizer<double> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
 
-	Model<float> model(networks, loss, optimizer);
+	Model<double> model(networks, loss, optimizer);
 
 	//std::ofstream mse_stream(base_output_dir + "mse-" + loss_type + ".dat", std::ofstream::trunc);
 	//boost::circular_buffer<double> mse_history(memory_window);
@@ -246,8 +246,9 @@ int main( int argc, char *argv[] )
 				//model.write_schrodinger_error(testing_data, 
 						//base_output_dir + "testing/sch-" + loss_type, epoch);
 						
-			std::cout << epoch << '\t' << model.mse(dataset) 
-					  << '\t' << model.predictive_power(dataset, epoch) << std::endl;
+			std::cout << epoch << '\t' << model.mse(dataset) << std::endl;
+
+			model.predictive_power(dataset, epoch);
 
 			model.learn_from(dataset);
 
