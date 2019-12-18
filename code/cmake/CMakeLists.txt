@@ -22,8 +22,9 @@ find_package(OpenMP)
 find_package(ArrayFire NO_MODULE)
 
 find_package(Eigen3 3.3.7 REQUIRED NO_MODULE) 
-include_directories("$ENV{EIGEN3_ROOT}")
-include_directories("$ENV{EIGEN3_ROOT}/unsupported")
+include_directories(../lib/eigen ../lib/eigen/unsupported)
+#include_directories("$ENV{EIGEN3_ROOT}")
+#include_directories("$ENV{EIGEN3_ROOT}/unsupported")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 	find_package(MKL REQUIRED)
