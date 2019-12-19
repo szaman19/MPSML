@@ -32,6 +32,27 @@ Operators<T>::Operators(int num_qubits) : num_qubits(num_qubits)
 }
 
 template <typename T>
+Eigen::SparseMatrix<T> Operators<T>::hamiltonian(const T* ptr_to_instance_of_fields_batch) const
+{
+	Eigen::SparseMatrix<T> term1, term2, term3;
+
+	const T* ptr = ptr_to_instance_of_fields_batch;
+
+	term1 = *(ptr + 0*num_qubits) * coupling_stencils[0];
+	term2 = *(ptr + 1*num_qubits) * transverse_stencils[0];
+	term3 = *(ptr + 2*num_qubits) * longitudinal_stencils[0];
+
+	for (int qubit = 1; qubit < num_qubits; ++qubit)
+	{
+		term1 += *(ptr + qubit + 0*num_qubits) * coupling_stencils[qubit];
+		term2 += *(ptr + qubit + 1*num_qubits) * transverse_stencils[qubit];
+		term3 += *(ptr + qubit + 2*num_qubits) * longitudinal_stencils[qubit];
+	}
+
+	return (-term1 - term2 - term3) / num_qubits;
+}
+
+template <typename T>
 Eigen::SparseMatrix<T> Operators<T>::hamiltonian(const Fields<T>& fields) const
 {
 	Eigen::SparseMatrix<T> term1, term2, term3;
@@ -48,6 +69,20 @@ Eigen::SparseMatrix<T> Operators<T>::hamiltonian(const Fields<T>& fields) const
 	}
 
 	return (-term1 - term2 - term3) / num_qubits;
+}
+
+template <typename T>
+Eigen::SparseMatrix<T> Operators<T>::energy(const T* ptr_to_instance_of_energy_batch) const
+{
+	int dim = coupling_stencils[0].rows();
+	Eigen::SparseMatrix<T> out(dim, dim);
+
+	for (int i = 0; i < dim; ++i)
+		out.insert(i, i) = *(ptr_to_instance_of_energy_batch + i);
+
+	out.makeCompressed();
+
+	return out;
 }
 
 template <typename T>

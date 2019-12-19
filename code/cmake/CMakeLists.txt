@@ -46,6 +46,7 @@ add_executable(phynet.x
 	../../src/phynet/main.cxx  
 	../../src/phynet/Model.cxx  
 	../../src/phynet/Network.cxx  
+	../../src/gendat/Operators.cxx
 	../../src/phynet/Optimizer.cxx  
 	../../src/phynet/Parser.cxx  
 	../../src/phynet/Topology.cxx)

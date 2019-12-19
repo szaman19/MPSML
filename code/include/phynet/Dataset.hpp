@@ -36,6 +36,10 @@ class Dataset
 		Dataset(int num_qubits, std::string fpath, 
 				int batch_size = 10, int num_instances = NUM_TOTAL_INSTANCES);
 
+		const Batch<T>& training_energy_batch(int batch) const;
+		const Batch<T>& validation_energy_batch(int batch) const;
+		const Batch<T>& testing_energy_batch(int batch) const;
+
 		const Batch<T>& training_feature_batch(int batch) const;
 		const Batch<T>& validation_feature_batch(int batch) const;
 		const Batch<T>& testing_feature_batch(int batch) const;
@@ -68,6 +72,7 @@ class Dataset
 
 		void fill(int pos_lower_idx, int num_batches,
 				std::vector<Batch<T>>& fields_var, 
+				std::vector<Batch<T>>& energy_var, 
 				std::vector<Waves<T>>& wavefx_var);
 
 		int num_qubits, num_instances, dim;
@@ -77,12 +82,15 @@ class Dataset
 		std::vector<std::streampos> pos;
 
 		std::vector<Batch<T>> training_fields;
+		std::vector<Batch<T>> training_energy;
 		std::vector<Waves<T>> training_wavefx;
 
 		std::vector<Batch<T>> validation_fields;
+		std::vector<Batch<T>> validation_energy;
 		std::vector<Waves<T>> validation_wavefx;
 
 		std::vector<Batch<T>> testing_fields;
+		std::vector<Batch<T>> testing_energy;
 		std::vector<Waves<T>> testing_wavefx;
 };
 

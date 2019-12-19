@@ -25,6 +25,8 @@ class Operators
 		Operators(int num_qubits);
 
 		Eigen::SparseMatrix<T> hamiltonian(const Fields<T>& fields) const;
+		Eigen::SparseMatrix<T> hamiltonian(const T* ptr_to_instance_of_fields_batch) const;
+		Eigen::SparseMatrix<T> energy(const T* ptr_to_instance_of_energy_batch) const;
 		Eigen::SparseMatrix<T> magnetization(void) const;
 
 	private:

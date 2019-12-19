@@ -14,17 +14,21 @@
 #include <string>
 #include <functional>
 #include <phynet/Network.hpp>
+#include <gendat/Operators.hpp>
 
 template <typename T>
 using Batch = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
 template <typename T>
+using NetVec = std::vector<Network<T>>;
+
+template <typename T>
 class Loss  
 {
-	typedef std::function<void(Network<T>&, const Batch<T>& target_batch)> loss_fcn_ptr;
+	typedef std::function<void(NetVec<T>&, const Dataset<T>&, int batch)> loss_fcn_ptr;
 	
 	public:
-		Loss(std::string loss, 
+		Loss(std::string loss, const Operators<T>& operators,
 				T lagrange_multiplier = 0.1, 
 				T trade_off_parameter = 0.1, 
 				T random_domain_bound = 0.1);
@@ -36,16 +40,20 @@ class Loss
 		void set_random_domain_bound(T value);
 
 	private:
-		T m_lagrange_multiplier;
-		T m_trade_off_parameter;
-		T m_random_domain_bound;
+		T lagrange_multiplier;
+		T trade_off_parameter;
+		T random_domain_bound;
+
+		Operators<T> operators;
+		
+		Eigen::SparseMatrix<T> lagrange_matrix;
 
 		void set_compute_pointer(std::string loss);
 
-		void quadratic(Network<T>& n, const Batch<T>& target_batch);
-		//void quadratic_plus_schrodinger(Network<T>& n, const Batch<T>& target_batch);
-		//void physics_perturbed_quadratic(Network<T>& n, const Batch<T>& target_batch);
-		//void randomly_perturbed_quadratic(Network<T>& n, const Batch<T>& target_batch);
+		void quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void randomly_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
 };
 	
 #endif /* Loss_hpp */

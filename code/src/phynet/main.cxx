@@ -9,11 +9,12 @@
 
 #include <numeric>
 #include <limits>
+#include <string>
 #include <boost/circular_buffer.hpp>
 #include <phynet/Model.hpp>
 #include <phynet/Parser.hpp>
 #include <phynet/Dataset.hpp>
-#include <string>
+#include <gendat/Operators.hpp>
 
 //int main()
 //{
@@ -43,7 +44,7 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("loss_type").empty() ? 
 		"bb" : parser.value_of_key("loss_type");
 	
-	const std::size_t batch_size = 
+	const int batch_size = 
 		parser.value_of_key("batch_size").empty() ? 
 		100 : std::atoi(parser.value_of_key("batch_size").c_str());
 
@@ -51,7 +52,7 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("cutout_option").empty() ? 
 		"true" : parser.value_of_key("cutout_option");
 	
-	const std::size_t epochs = 
+	const int epochs = 
 		parser.value_of_key("epochs").empty() ? 
 		1000 : std::atoi(parser.value_of_key("epochs").c_str());
 	
@@ -63,7 +64,7 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("hidden_activation").empty() ? 
 		"tanh" : parser.value_of_key("hidden_activation");
 	
-	const std::size_t hidden_layer_size =
+	const int hidden_layer_size =
 		parser.value_of_key("hidden_layer_size").empty() ? 
 		100 : std::atoi(parser.value_of_key("hidden_layer_size").c_str());
 	
@@ -95,11 +96,11 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("optimizer").empty() ? 
 		"sgd" : parser.value_of_key("optimizer");
 	
-	const std::size_t memory_window = 
+	const int memory_window = 
 		parser.value_of_key("memory_window").empty() ?
 		30 : std::atoi(parser.value_of_key("memory_window").c_str());
 
-	const std::size_t num_hidden_layers = 
+	const int num_hidden_layers = 
 		parser.value_of_key("num_hidden_layers").empty() ? 
 		1 : std::atoi(parser.value_of_key("num_hidden_layers").c_str());
 	
@@ -131,17 +132,10 @@ int main( int argc, char *argv[] )
 	
 	const std::string data_path = base_input_dir + qubits + "-qubits.bin";
 
-	std::cout << data_path << '\n';
-
 	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size, instances);
 
-	// technically shouldn't have to run this everytime, but its harmless and guarantees existance 
-	//training_data.generate_template_average_file(base_output_dir+"training/avg-sz-exact.dat");
-	//testing_data.generate_template_average_file(base_output_dir+"testing/avg-sz-exact.dat");
-	//validation_data.generate_template_average_file(base_output_dir+"validation/avg-sz-exact.dat");
-	
-	const std::size_t input_layer_size = dataset.feature_length();
-	const std::size_t output_layer_size = dataset.target_length();
+	const int input_layer_size = dataset.feature_length();
+	const int output_layer_size = dataset.target_length();
 
 	Activation<double> input_activation("linear");
 	Activation<double> hidden_activation(hidden_activation_type);
@@ -150,7 +144,7 @@ int main( int argc, char *argv[] )
 	Topology<double> topology(batch_size);
 	topology.push_back(input_layer_size, input_activation);
 
-	for (std::size_t i = 0; i < num_hidden_layers; ++i) 
+	for (int i = 0; i < num_hidden_layers; ++i) 
 		topology.push_back(hidden_layer_size, hidden_activation);
 	
 	topology.push_back(output_layer_size, target_activation);
@@ -163,48 +157,41 @@ int main( int argc, char *argv[] )
 
 	for (int i = 0; i < dataset.num_eigenvectors(); ++i) networks.push_back(network);
 
-	Loss<double> loss(loss_type, lagrange_multiplier, trade_off_parameter);
+	Operators<double> operators(std::atoi(qubits.c_str()));
 	Optimizer<double> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
 
+	Loss<double> loss(loss_type, operators, lagrange_multiplier, trade_off_parameter);
 	Model<double> model(networks, loss, optimizer);
 
 	//std::ofstream mse_stream(base_output_dir + "mse-" + loss_type + ".dat", std::ofstream::trunc);
-	//boost::circular_buffer<double> mse_history(memory_window);
+	boost::circular_buffer<double> mse_history(memory_window);
 
-	//for (std::size_t i = 0; i < memory_window; ++i)
-		//mse_history.push_back(std::numeric_limits<double>::max());
+	for (int i = 0; i < memory_window; ++i)
+		mse_history.push_back(std::numeric_limits<double>::max());
 
-	//double cutout_value, training_mse, testing_mse, inactive_value;
-	//std::vector<double> activities(memory_window);
+	double cutout_value, inactive_value;
+	std::vector<double> activities(memory_window);
 
-	//std::cout << "#Epoch   Training      Testing      Validation\n";
 	//std::cout << std::scientific;
 	
 	//mse_stream << "#Epoch   Training      Testing      Validation\n";
 	//mse_stream << std::scientific;
 
-	//std::cout << "Epoch \t MSE \t PredP \n";
-
-	double cutout_value = 1e6;
-	double inactive_value = 1e6;
-
-	for (std::size_t epoch = 0; epoch <= epochs; ++epoch)
+	for (int epoch = 0; epoch <= epochs; ++epoch)
 	{
-		//mse_history.push_back(model.mse(validation_data));
-		//training_mse = model.mse(training_data);
-		//testing_mse = model.mse(testing_data);
+		mse_history.push_back(model.mse(dataset));
 
-		//std::adjacent_difference(
-				//mse_history.begin(), 
-				//mse_history.end(), 
-				//activities.data(),
-				//[](double x, double y){return std::abs(x-y);});
+		std::adjacent_difference(
+				mse_history.begin(), 
+				mse_history.end(), 
+				activities.data(),
+				[](double x, double y){return std::abs(x-y);});
 
-		//inactive_value = std::accumulate(activities.begin() + 1, activities.end(), 0.0);
-		//inactive_value /= memory_window;
+		inactive_value = std::accumulate(activities.begin() + 1, activities.end(), 0.0);
+		inactive_value /= memory_window;
 
-		//cutout_value = std::accumulate(mse_history.begin(), mse_history.end(), 0.0);
-		//cutout_value /= memory_window;
+		cutout_value = std::accumulate(mse_history.begin(), mse_history.end(), 0.0);
+		cutout_value /= memory_window;
 
 		if (cutout_option == "true" && cutout_value < validation_threshold) 
 		{
@@ -246,6 +233,7 @@ int main( int argc, char *argv[] )
 				//model.write_schrodinger_error(testing_data, 
 						//base_output_dir + "testing/sch-" + loss_type, epoch);
 						
+			//std::cout << "#Epoch      MSE  \n";
 			std::cout << epoch << '\t' << model.mse(dataset) << std::endl;
 
 			model.predictive_power(dataset, epoch);

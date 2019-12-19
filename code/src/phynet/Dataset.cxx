@@ -16,7 +16,7 @@ Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size, int num_i
 	dim = (int)(pow(2, num_qubits) + 0.5);
 	init_pos();
 
-	//std::cout << "Gathering necessary virtual memory...\t";
+	std::cout << "Gathering necessary virtual memory...\n";
 	allocate();
 	//std::cout << "done\n";
 
@@ -42,6 +42,7 @@ template <typename T>
 void Dataset<T>::allocate(void)
 {
 	Batch<T> fields(3 * num_qubits, batch_size);
+	Batch<T> energy(dim, batch_size);
 	Batch<T> wavefx(dim, batch_size);
 	Waves<T> waves;
 
@@ -54,18 +55,21 @@ void Dataset<T>::allocate(void)
 	for (int i = 0; i < num_training_batches; ++i) 
 	{
 		training_fields.push_back(fields);
+		training_energy.push_back(energy);
 		training_wavefx.push_back(waves);
 	}
 
 	for (int i = 0; i < num_validation_batches; ++i)
 	{
 		validation_fields.push_back(fields);
+		validation_energy.push_back(energy);
 		validation_wavefx.push_back(waves);
 	}
 
 	for (int i = 0; i < num_testing_batches; ++i)
 	{
 		testing_fields.push_back(fields);
+		testing_energy.push_back(energy);
 		testing_wavefx.push_back(waves);
 	}
 }
@@ -73,6 +77,7 @@ void Dataset<T>::allocate(void)
 template <typename T>
 void Dataset<T>::fill(int pos_lower_idx, int num_batches,
 		std::vector<Batch<T>>& fields_var, 
+		std::vector<Batch<T>>& energy_var, 
 		std::vector<Waves<T>>& wavefx_var)
 {
 	std::ifstream file(fpath.c_str(), std::ios::binary);  
@@ -85,6 +90,7 @@ void Dataset<T>::fill(int pos_lower_idx, int num_batches,
 
 	long fields_bytes = NUM_HAM_PARAM * num_qubits * sizeof(T);
 	long wavefx_bytes = dim * sizeof(T);
+	long energy_bytes = dim * sizeof(T);
 
 	for (int batch = 0; batch  < num_batches; ++batch)
 	{
@@ -94,8 +100,8 @@ void Dataset<T>::fill(int pos_lower_idx, int num_batches,
 			file.seekg(pos[pos_lower_idx + instance + batch * batch_size]);
 			// pull out fields
 			file.read((char*)fields_var[batch].col(instance).data(), fields_bytes);
-			// move file pointer ahead to first wavefx by skipping energies 
-			file.seekg(wavefx_bytes, std::ios::cur);
+			// pull out energies
+			file.read((char*)energy_var[batch].col(instance).data(), energy_bytes);
 			// pull out wavefunctions 	
 			for (int vec = 0; vec < dim; ++vec)
 				file.read((char*)wavefx_var[batch][vec].col(instance).data(), wavefx_bytes);
@@ -106,8 +112,7 @@ void Dataset<T>::fill(int pos_lower_idx, int num_batches,
 template <typename T>
 void Dataset<T>::import(int num_instances)
 {
-	//std::cout << "Importing " << num_instances << " instances from \n\t" << fpath
-			  //<< "\nthis may take some time...\t";
+	std::cout << "Importing " << num_instances << " instances from " << fpath << '\n';
 			  
 	this->num_instances = num_instances;
 
@@ -124,11 +129,14 @@ void Dataset<T>::import(int num_instances)
 	int num_validation_batches = (int)(num_instances * PERCENT_VALIDATION) / batch_size;
 	int num_testing_batches = (int)(num_instances * PERCENT_TESTING) / batch_size;
 
-	fill(lower_training_index, num_training_batches, training_fields, training_wavefx);
-	fill(lower_validation_index, num_validation_batches, validation_fields, validation_wavefx);
-	fill(lower_testing_index, num_testing_batches, testing_fields, testing_wavefx);
+	fill(lower_training_index, num_training_batches, 
+			training_fields, training_energy, training_wavefx);
 
-	//std::cout << "done\n";
+	fill(lower_validation_index, num_validation_batches, 
+			validation_fields, validation_energy, validation_wavefx);
+
+	fill(lower_testing_index, num_testing_batches, 
+			testing_fields, testing_energy, testing_wavefx);
 }
 
 template <typename T>
@@ -179,11 +187,28 @@ int Dataset<T>::num_eigenvectors(void) const
 	return dim;
 }
 
-
 template <typename T>
 int Dataset<T>::num_testing_batches(void) const 
 {
 	return testing_fields.size();
+}
+
+template <typename T>
+const Batch<T>& Dataset<T>::training_energy_batch(int batch) const 
+{
+	return training_energy[batch];
+}
+
+template <typename T>
+const Batch<T>& Dataset<T>::validation_energy_batch(int batch) const 
+{
+	return training_energy[batch];
+}
+
+template <typename T>
+const Batch<T>& Dataset<T>::testing_energy_batch(int batch) const 
+{
+	return training_energy[batch];
 }
 
 template <typename T>

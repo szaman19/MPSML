@@ -22,7 +22,7 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 {
 	int dim = dataset.num_eigenvectors();
 	T out = 0;
-
+	
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_preds(dim, dim);
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_targs(dim, dim);
 
@@ -45,49 +45,9 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 					networks[vec].layers.back().states.col(instance).norm();
 			}
 
-			//if (epoch != 0 && epoch % 100 == 0)
-			//{
-				//std::cout << "##### EPOCH: " << epoch << " BATCH: " << batch << " INSTANCE: " << instance << " TARGS #####\n";
-				//std::cout << normalized_targs << "\n\n";
-				
-				//open_ascii_escape("blue");
-				//std::cout << "##### EPOCH: " << epoch << " BATCH: " << batch << " INSTANCE: " << instance << " PREDS #####\n";
-				//std::cout << normalized_preds << "\n\n";
-				//close_ascii_escape();
-			//}
-			
-			auto pretty_print = [](const Eigen::MatrixXd& mat) -> void 
-			{
-				std::cout << std::endl;
-				std::cout << std::endl;
-				for (int i = 0; i < mat.rows(); ++i)
-				{
-					for (int j = 0; j < mat.cols(); ++j)
-					{
-						std::cout << std::fixed << std::setprecision(4) << std::setw(9) << std::right;
-						if (std::abs(mat(i,j)) == mat.col(j).cwiseAbs().maxCoeff()) 
-						{
-							open_ascii_escape("yellow");
-							std::cout << mat(i,j);	
-							close_ascii_escape();
-						}
-						else
-						{
-							std::cout << mat(i,j);
-							close_ascii_escape();
-						}
-					}
-					std::cout << std::endl;
-				}
-				std::cout << std::endl;;
-			};
-			
-
 			if (instance == 0 && batch == 0 && epoch % 10 == 0 && epoch != 0)
-			{
 				pretty_print(normalized_preds.transpose() * normalized_targs);
-			}
-
+			
 			//out += (normalized_preds.transpose() * normalized_targs).norm();
 		}
 	}
@@ -96,17 +56,52 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 }
 
 template <typename T>
+void Model<T>::pretty_print(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& mat) const
+{
+	std::cout << std::endl;
+	std::cout << std::endl;
+	for (int i = 0; i < mat.rows(); ++i)
+	{
+		for (int j = 0; j < mat.cols(); ++j)
+		{
+			std::cout << std::fixed << std::setprecision(4) << std::setw(10) << std::right;
+			if (std::abs(mat(i,j)) == mat.col(j).cwiseAbs().maxCoeff() && i == j) 
+			{
+				open_ascii_escape("green");
+				std::cout << mat(i,j);	
+				close_ascii_escape();
+			}
+			else if (std::abs(mat(i,j)) == mat.col(j).cwiseAbs().maxCoeff())
+			{
+				open_ascii_escape("red");
+				std::cout << mat(i,j);
+				close_ascii_escape();
+			}
+			else
+			{
+				std::cout << mat(i,j);
+			}
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;;
+}
+
+template <typename T>
 void Model<T>::learn_from(const Dataset<T>& dataset)
 {
-	for (int network = 0; network < (int)networks.size(); ++network)
+	for (int batch = 0; batch < dataset.num_training_batches(); ++batch)
 	{
-		for (int batch = 0; batch < dataset.num_training_batches(); ++batch)
-		{
-			networks[network].feedforward(dataset.training_feature_batch(batch));
-			loss.compute(networks[network], dataset.training_target_batch(batch, network));
-			networks[network].backpropagate();
-			optimizer.update(networks[network]);
-		}
+		for (std::size_t net = 0; net < networks.size(); ++net)
+			networks[net].feedforward(dataset.training_feature_batch(batch));
+
+		loss.compute(networks, dataset, batch);
+
+		for (std::size_t net = 0; net < networks.size(); ++net)
+			networks[net].backpropagate();
+
+		for (std::size_t net = 0; net < networks.size(); ++net)
+			optimizer.update(networks[net]);
 	}
 }
 
@@ -124,7 +119,8 @@ T Model<T>::mse(const Dataset<T>& dataset)
 		{
 			networks[vec].feedforward(dataset.validation_feature_batch(batch));
 
-			tmp += (networks[vec].layers.back().states - dataset.validation_target_batch(batch, vec)).array().square();
+			tmp += (networks[vec].layers.back().states 
+					- dataset.validation_target_batch(batch, vec)).array().square();
 
 			//loss.compute(networks[vec], dataset.validation_target_batch(batch, vec));
 			//tmp += networks[vec].layers.back().errors.array().square();

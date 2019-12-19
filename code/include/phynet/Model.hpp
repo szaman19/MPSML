@@ -10,10 +10,11 @@
 #ifndef Model_hpp
 #define Model_hpp
 
+#include <vector>
 #include <phynet/Network.hpp>
 #include <phynet/Loss.hpp>
 #include <phynet/Optimizer.hpp>
-#include <vector>
+#include <gendat/Operators.hpp>
 
 template <typename T>
 class Model  
@@ -40,6 +41,8 @@ class Model
 		std::vector<Network<T>> networks;
 		Loss<T> loss; 
 		Optimizer<T> optimizer;		
+
+		void pretty_print(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& mat) const;
 };
 	
 #endif /* Model_hpp */
