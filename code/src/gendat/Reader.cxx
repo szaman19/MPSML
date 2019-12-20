@@ -45,10 +45,21 @@ void Reader<T>::read(int instance)
 	fields.push_back(tmp_fields);
 	values.push_back(tmp_values);
 	wavefx.push_back(tmp_wavefx);
+}
 
-	fields[0].print();
-	std::cout << values[0].transpose() << "\n\n";	
-	std::cout << wavefx[0] << "\n\n";
+template <typename T>
+void Reader<T>::print(void) const
+{
+
+	for (std::size_t i = 0; i < fields.size(); ++i)
+	{
+		fields[i].print();
+
+		std::cout << "Eigenvalues:\n";
+		std::cout << values[i].transpose() << "\n\n";
+		std::cout << "Eigenvectors:\n";
+		std::cout << wavefx[i] << "\n\n";
+	}
 }
 
 template class Reader<double>;

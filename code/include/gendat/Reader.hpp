@@ -24,6 +24,7 @@ class Reader
 			: num_qubits(num_qubits), fpath(fpath) { }
 
 		void read(int instance);
+		void print(void) const;
 
 	private:
 		void read(void);

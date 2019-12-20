@@ -22,16 +22,20 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 {
 	int dim = dataset.num_eigenvectors();
 	T out = 0;
+
+	if (epoch % 10 == 0 && epoch != 0)
+	{
 	
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_preds(dim, dim);
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_targs(dim, dim);
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_final(dim, dim);
+
+	normalized_final.setZero();
 
 	for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
 	{
 		for (int vec = 0; vec < dataset.num_eigenvectors(); ++vec)
-		{
 			networks[vec].feedforward(dataset.testing_feature_batch(batch));
-		}
 
 		for (int instance = 0; instance < dataset.batch_size; ++instance)
 		{
@@ -45,14 +49,25 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 					networks[vec].layers.back().states.col(instance).norm();
 			}
 
-			if (instance == 0 && batch == 0 && epoch % 10 == 0 && epoch != 0)
-				pretty_print(normalized_preds.transpose() * normalized_targs);
-			
+			normalized_final += normalized_preds.transpose() * normalized_targs;
+
 			//out += (normalized_preds.transpose() * normalized_targs).norm();
 		}
 	}
 
+	normalized_final /= dataset.num_testing_instances();
+
+	pretty_print(normalized_final);
+
+	} // temporary if statement 
+
 	return out / (dataset.num_testing_instances() * std::sqrt(dim));	
+}
+
+template <typename T>
+Eigen::RowVectorXd Model<T>::pure_cost(const Dataset<T>& dataset) 
+{
+	return loss.pure_cost(networks, dataset);
 }
 
 template <typename T>
@@ -64,11 +79,11 @@ void Model<T>::pretty_print(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynami
 	{
 		for (int j = 0; j < mat.cols(); ++j)
 		{
-			std::cout << std::fixed << std::setprecision(4) << std::setw(10) << std::right;
+			std::cout << std::fixed << std::setprecision(4) << std::setw(9) << std::right;
 			if (std::abs(mat(i,j)) == mat.col(j).cwiseAbs().maxCoeff() && i == j) 
 			{
 				open_ascii_escape("green");
-				std::cout << mat(i,j);	
+				std::cout << mat(i,j);
 				close_ascii_escape();
 			}
 			else if (std::abs(mat(i,j)) == mat.col(j).cwiseAbs().maxCoeff())
@@ -105,6 +120,7 @@ void Model<T>::learn_from(const Dataset<T>& dataset)
 	}
 }
 
+
 template <typename T>
 T Model<T>::mse(const Dataset<T>& dataset)
 {
@@ -117,13 +133,13 @@ T Model<T>::mse(const Dataset<T>& dataset)
 	{
 		for (int batch = 0; batch < dataset.num_validation_batches(); ++batch)
 		{
-			networks[vec].feedforward(dataset.validation_feature_batch(batch));
+			//networks[vec].feedforward(dataset.validation_feature_batch(batch));
 
-			tmp += (networks[vec].layers.back().states 
-					- dataset.validation_target_batch(batch, vec)).array().square();
+			//tmp += (networks[vec].layers.back().states 
+					//- dataset.validation_target_batch(batch, vec)).array().square();
+			//loss.compute(networks, dataset, batch);
 
-			//loss.compute(networks[vec], dataset.validation_target_batch(batch, vec));
-			//tmp += networks[vec].layers.back().errors.array().square();
+			tmp += networks[vec].layers.back().errors.array().square();
 		}
 	}
 	

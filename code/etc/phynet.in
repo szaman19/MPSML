@@ -1,9 +1,26 @@
+
+
 chain = clean-Ising
-qubits = 4
-instances = 8000
-loss_type = c2
-#lagrange_multiplier = 0.2
-#learning_rate = 0.05
+qubits = 2
+
+
+instances = 1000
 batch_size = 1
+loss_type = bb
+
+
 num_hidden_layers = 1
-hidden_layer_size = 30
+hidden_layer_size = 10
+
+
+#trade_off_parameter = xx
+#lagrange_multiplier = 1
+#random_domain_bound = xx
+
+
+#epochs = 1000
+
+
+#cutout_option = false
+#learning_rate = 0.1
+#optimizer = adadelta

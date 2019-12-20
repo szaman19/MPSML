@@ -76,6 +76,10 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("lagrange_multiplier").empty() ?
 		0.1 : std::atof(parser.value_of_key("lagrange_multiplier").c_str());
 	
+	const double random_domain_bound = 
+		parser.value_of_key("random_domain_bound").empty() ?
+		0.1 : std::atof(parser.value_of_key("random_domain_bound").c_str());
+
 	const double trade_off_parameter = 
 		parser.value_of_key("trade_off_parameter").empty() ?
 		0.1 : std::atof(parser.value_of_key("trade_off_parameter").c_str());
@@ -160,7 +164,7 @@ int main( int argc, char *argv[] )
 	Operators<double> operators(std::atoi(qubits.c_str()));
 	Optimizer<double> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
 
-	Loss<double> loss(loss_type, operators, lagrange_multiplier, trade_off_parameter);
+	Loss<double> loss(loss_type, operators, lagrange_multiplier, trade_off_parameter, random_domain_bound);
 	Model<double> model(networks, loss, optimizer);
 
 	//std::ofstream mse_stream(base_output_dir + "mse-" + loss_type + ".dat", std::ofstream::trunc);
@@ -234,7 +238,8 @@ int main( int argc, char *argv[] )
 						//base_output_dir + "testing/sch-" + loss_type, epoch);
 						
 			//std::cout << "#Epoch      MSE  \n";
-			std::cout << epoch << '\t' << model.mse(dataset) << std::endl;
+			
+			std::cout << epoch << '\t' << mse_history.back() << std::endl;
 
 			model.predictive_power(dataset, epoch);
 
@@ -245,6 +250,10 @@ int main( int argc, char *argv[] )
 		}
 
 	}
+
+
+	std::cout << std::scientific;
+	std::cout << lagrange_multiplier << '\t' << model.pure_cost(dataset) << '\n';
 
 	//if (parser.value_of_key("save_model") == "true") 
 		//model.save(base_output_dir + loss_type + "-model.net");

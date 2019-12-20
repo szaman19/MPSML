@@ -16,8 +16,8 @@
 #include <Eigen/Dense>
 #include <nixio/nixio.hpp>
 #include <gendat/Fields.hpp>
+#include <boost/filesystem.hpp>
 
-#define NUM_TOTAL_INSTANCES 100000
 #define PERCENT_TRAINING 0.8
 #define PERCENT_VALIDATION 0.1
 #define PERCENT_TESTING 0.1
@@ -34,7 +34,7 @@ class Dataset
 {
 	public:
 		Dataset(int num_qubits, std::string fpath, 
-				int batch_size = 10, int num_instances = NUM_TOTAL_INSTANCES);
+				int batch_size, int num_instances);
 
 		const Batch<T>& training_energy_batch(int batch) const;
 		const Batch<T>& validation_energy_batch(int batch) const;
@@ -60,7 +60,7 @@ class Dataset
 		int num_validation_instances(void) const;
 		int num_testing_instances(void) const;
 
-		void import(int num_instances = NUM_TOTAL_INSTANCES);
+		void import(int num_instances);
 
 		void shuffle(void);
 

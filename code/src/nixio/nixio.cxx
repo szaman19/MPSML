@@ -35,6 +35,8 @@ void open_ascii_escape(std::string color)
 	if (color == "yellow") std::cout << "\033[1;33m";
 	if (color == "blue")   std::cout << "\033[1;34m";
 	if (color == "purple") std::cout << "\033[1;35m";
+	if (color == "cyan")   std::cout << "\033[1;36m";
+	if (color == "white")  std::cout << "\033[1;37m";
 }
 
 void close_ascii_escape(void)

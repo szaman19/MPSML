@@ -22,8 +22,15 @@ Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size, int num_i
 
 	if (num_instances < batch_size)
 	{
-		std::cerr << "WARNING: REDUCING BATCH SIZE...\n";
-		batch_size = num_instances;
+		std::cerr << "WARNING: BAD BATCH SIZE...\n";
+		exit(-1);
+	}
+
+	if ((3*num_qubits + dim + dim*dim)*num_instances*sizeof(T) > 
+			boost::filesystem::file_size(fpath))
+	{
+		std::cerr << "ERROR!: REQUESTED MORE INSTANCES THAN EXIST IN FILE\n";
+		exit(-1);
 	}
 
 	import(num_instances);
@@ -34,7 +41,7 @@ void Dataset<T>::init_pos(void)
 {
 	std::streamoff offset = (3*num_qubits + dim + dim*dim) * sizeof(T);
 
-	for (int instance = 0; instance < NUM_TOTAL_INSTANCES; ++instance)
+	for (int instance = 0; instance < num_instances; ++instance)
 		pos.push_back(offset * instance);	
 }
 

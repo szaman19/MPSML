@@ -32,6 +32,50 @@ Loss<T>::Loss(std::string loss, const Operators<T>& operators,
 	lagrange_matrix.makeCompressed();
 }
 
+template <typename T>
+Eigen::RowVectorXd Loss<T>::pure_cost(NetVec<T>& nets, const Dataset<T>& data)
+{
+	int dim = data.num_eigenvectors(); 
+	
+	Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor> out(2, dim);
+
+	out.setZero();
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+
+	for (int batch = 0; batch < data.num_testing_batches(); ++batch)
+	{
+		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+			nets[vec].feedforward(data.testing_feature_batch(batch));
+
+		for (int instance = 0; instance < data.batch_size; ++instance)
+		{
+			for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+			{
+				P.col(vec) = nets[vec].layers.back().states.col(instance) / 
+					nets[vec].layers.back().states.col(instance).norm();
+			}
+
+			H = this->operators.hamiltonian(data.testing_feature_batch(batch).col(instance).data());
+
+			E = this->operators.energy(data.testing_energy_batch(batch).col(instance).data());	
+
+			for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+			{
+				out(0, vec) += 0.5 * (data.testing_target_batch(batch, vec).col(instance) -
+					nets[vec].layers.back().states.col(instance)).cwiseAbs2().sum();	
+
+				out(1, vec) += 0.5 * ( (H * P - P * E) * L ).col(vec).cwiseAbs2().sum();
+			}
+		}	
+	}
+
+	Eigen::Map<Eigen::RowVectorXd> v(out.data(), out.size());
+
+	return v / data.num_testing_instances();
+}
+
 
 template <typename T>
 void Loss<T>::quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch)
@@ -75,7 +119,10 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 	{
 		// 2. 
 		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			P.col(vec) = nets[vec].layers.back().states.col(instance);
+		{
+			P.col(vec) = nets[vec].layers.back().states.col(instance) / 
+				nets[vec].layers.back().states.col(instance).norm();
+		}
 
 		// 3. 
 		H = this->operators.hamiltonian(data.training_feature_batch(batch).col(instance).data());
@@ -88,7 +135,7 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 
 		// 6. 
 		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			nets[vec].layers.back().errors.col(instance) += (1.0 / dim) * SCHRO.col(instance);
+			nets[vec].layers.back().errors.col(instance) += SCHRO.col(instance);
 	}	
 
 	// 7.
@@ -119,7 +166,10 @@ void Loss<T>::physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& dat
 	for (int instance = 0; instance < data.batch_size; ++instance)
 	{
 		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			P.col(vec) = nets[vec].layers.back().states.col(instance);
+		{
+			P.col(vec) = nets[vec].layers.back().states.col(instance) / 
+				nets[vec].layers.back().states.col(instance).norm();
+		}
 
 		H = this->operators.hamiltonian(data.training_feature_batch(batch).col(instance).data());
 
@@ -129,7 +179,7 @@ void Loss<T>::physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& dat
 		PERT = trade_off_parameter * (H * P - P * E);
 
 		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			nets[vec].layers.back().errors.col(instance) += (1.0 / dim) * PERT.col(instance);
+			nets[vec].layers.back().errors.col(instance) += PERT.col(instance);
 	}	
 }
 

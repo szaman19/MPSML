@@ -35,6 +35,8 @@ class Loss
 
 		loss_fcn_ptr compute;
 
+		Eigen::RowVectorXd pure_cost(NetVec<T>& nets, const Dataset<T>& data);
+
 		void set_lagrange_multiplier(T value);
 		void set_trade_off_parameter(T value);
 		void set_random_domain_bound(T value);
