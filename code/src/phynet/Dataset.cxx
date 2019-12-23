@@ -125,7 +125,6 @@ void Dataset<T>::import(int num_instances)
 
 	std::random_device rd;	
 	std::default_random_engine engine(rd());
-	
 	std::shuffle(pos.begin(), pos.end(), engine);
 
 	int lower_training_index = 0;		

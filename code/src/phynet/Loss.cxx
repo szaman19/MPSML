@@ -42,7 +42,7 @@ Eigen::RowVectorXd Loss<T>::pure_cost(NetVec<T>& nets, const Dataset<T>& data)
 	out.setZero();
 
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim);
-	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim);
 
 	for (int batch = 0; batch < data.num_testing_batches(); ++batch)
 	{
@@ -66,7 +66,7 @@ Eigen::RowVectorXd Loss<T>::pure_cost(NetVec<T>& nets, const Dataset<T>& data)
 				out(0, vec) += 0.5 * (data.testing_target_batch(batch, vec).col(instance) -
 					nets[vec].layers.back().states.col(instance)).cwiseAbs2().sum();	
 
-				out(1, vec) += 0.5 * ( (H * P - P * E) * L ).col(vec).cwiseAbs2().sum();
+				out(1, vec) += 0.5 * (H * P - P * E).col(vec).cwiseAbs2().sum();
 			}
 		}	
 	}

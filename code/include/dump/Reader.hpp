@@ -14,6 +14,7 @@
 #include <vector>
 #include <string>
 #include <Eigen/Dense>
+#include <boost/filesystem.hpp>
 #include <gendat/Fields.hpp>
 
 template <typename T>
@@ -23,11 +24,10 @@ class Reader
 		Reader(int num_qubits, std::string fpath) 
 			: num_qubits(num_qubits), fpath(fpath) { }
 
-		void read(int instance);
+		void read(void);
 		void print(void) const;
 
 	private:
-		void read(void);
 		int num_qubits;
 		std::string fpath;
 		std::vector<Fields<T>> fields;

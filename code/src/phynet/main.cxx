@@ -16,21 +16,6 @@
 #include <phynet/Dataset.hpp>
 #include <gendat/Operators.hpp>
 
-//int main()
-//{
-	//int num_qubits = 4;
-	//int batch_size = 100;
-
-	//std::string N = std::to_string(num_qubits);
-
-	//std::string root = "/home/csingh5/Documents/guided-machine-learning/code/data/";
-	//std::string fpath = root + "input/clean-Ising/" + N + "-qubits.bin";
-
-	//Dataset<double> data(num_qubits, fpath, batch_size);
-
-	//return 0;
-//}
-
 int main( int argc, char *argv[] )
 {
 	std::string param_file;
@@ -241,7 +226,6 @@ int main( int argc, char *argv[] )
 			
 			std::cout << epoch << '\t' << mse_history.back() << std::endl;
 
-			model.predictive_power(dataset, epoch);
 
 			model.learn_from(dataset);
 
@@ -251,6 +235,7 @@ int main( int argc, char *argv[] )
 
 	}
 
+	model.predictive_power(dataset, 0);
 
 	std::cout << std::scientific;
 	std::cout << lagrange_multiplier << '\t' << model.pure_cost(dataset) << '\n';
@@ -261,29 +246,3 @@ int main( int argc, char *argv[] )
 
 	return 0;
 }
-
-	//af::setDevice(1);
-	//af::setBackend(AF_BACKEND_CPU);
-	//af::info();
-
-	//const int N = 1000;
-	//const int trials = 1;
-
-	//eigen e1(N,N), e2(N,N);
-	//e1.setRandom();
-
-	//af::timer::start();
-	//for (int i = 0; i < trials; ++i) e2 = e1 * e1;
-	//std::cout << "CPU runtime : " << af::timer::stop()/trials << " seconds\n";
-
-	//// Select a device and display arrayfire info
-	//af::info();
-
-	//af::array a1(N, N, e1.data()), a2(N,N);
-	//af::timer::start();
-	//for (int i = 0; i < trials; ++i) a2 = matmul(a1,a1);
-	//std::cout << "GPU runtime : " << af::timer::stop()/trials << " seconds\n";
-	   
-	//Eigen::Map<Eigen::MatrixXf> res(a2.host<double>(), N, N);
-	//if (res.isApprox(e2)) std::cout << "CPU and GPU agree\n";
-	//else std::cout << "CPU and GPU disagree\n";

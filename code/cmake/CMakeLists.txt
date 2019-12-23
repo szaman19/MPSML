@@ -17,19 +17,18 @@ include(CheckIncludeFileCXX)
 find_package(Git)
 find_package(Boost REQUIRED COMPONENTS random filesystem)
 
-find_package(MPI)
-find_package(OpenMP)
+#find_package(MPI REQUIRED)
+find_package(OpenMP REQUIRED)
 find_package(ArrayFire NO_MODULE)
 
 find_package(Eigen3 3.3.7 REQUIRED NO_MODULE) 
 include_directories(../lib/eigen ../lib/eigen/unsupported)
-#include_directories("$ENV{EIGEN3_ROOT}")
-#include_directories("$ENV{EIGEN3_ROOT}/unsupported")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 	find_package(MKL REQUIRED)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl=sequential")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ipo -inline-forceinline")
+	#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ipo -inline-forceinline -qoverride-limits -qopenmp")
 	add_definitions(-DEIGEN_USE_MKL_ALL)
 	include_directories(${MKL_INCLUDE_DIRS})
 endif()
@@ -38,7 +37,12 @@ include_directories(../include)
 
 add_library(nixio STATIC ../../src/nixio/nixio.cxx)
 
-add_executable(phynet.x
+add_executable(dump 
+	../../src/dump/main.cxx
+	../../src/dump/Reader.cxx
+	../../src/gendat/Fields.cxx)
+
+add_executable(phynet
 	../../src/phynet/Activation.cxx  
 	../../src/phynet/Dataset.cxx  
 	../../src/phynet/Layer.cxx  
@@ -51,7 +55,7 @@ add_executable(phynet.x
 	../../src/phynet/Parser.cxx  
 	../../src/phynet/Topology.cxx)
 
-add_executable(gendat.x 
+add_executable(gendat 
 	../../src/gendat/Generator.cxx
 	../../src/gendat/Fields.cxx
 	../../src/gendat/Instance.cxx
@@ -59,8 +63,11 @@ add_executable(gendat.x
 	../../src/gendat/Operators.cxx
 	../../src/gendat/Solver.cxx)
 
-target_link_libraries(phynet.x nixio ${Boost_LIBRARIES} ${MKL_LIBRARIES})
-target_link_libraries(gendat.x ${Boost_LIBRARIES} ${MKL_LIBRARIES})
+target_link_libraries(dump ${Boost_LIBRARIES})
+target_link_libraries(gendat ${Boost_LIBRARIES} ${MKL_LIBRARIES})
+target_link_libraries(phynet nixio ${Boost_LIBRARIES} ${MKL_LIBRARIES})
 
-#include_directories(../include ${EIGEN3_INCLUDE_DIRS} ${MKL_INCLUDE_DIRS} ${MPI_CXX_HEADER_DIR} ${ARRAY_FIRE_INCLUDE_DIRS}) 
-#target_link_libraries(phynet.x ArrayFire::af Eigen3::Eigen MPI::MPI_CXX ${Boost_RANDOM_LIBRARY} ${MKL_LIBRARIES} ${ArrayFire_LIBRARIES} ${CUDA_LIBRARIES})
+
+
+
+

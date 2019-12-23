@@ -16,10 +16,10 @@
 #include "Operators.hpp"
 #include "Fields.hpp"
 
-#define BX_MIN 0.02
+#define BX_MIN 0.00
 #define BX_MAX 1.99
 #define J 1.0
-#define BZ 0.05
+#define BZ 0.0
 #define DISORDER_STRENGTH 0.01
 
 template <typename T>

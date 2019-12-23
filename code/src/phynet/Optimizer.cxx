@@ -56,7 +56,7 @@ void Optimizer<T>::adaptive_delta(Network<T>& net)
 template <typename T>
 void Optimizer<T>::compute_gradients(const Network<T>& net)
 {
-	T step_size = m_learning_rate / net.layers[0].states.cols();
+	T step_size = 1.0 / net.layers[0].states.cols();
 
 	for (std::size_t l = net.layers.size() - 1; l >= 1; --l)
 	{

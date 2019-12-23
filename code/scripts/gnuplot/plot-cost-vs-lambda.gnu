@@ -5,54 +5,55 @@ set output "t.pdf"
 
 set multiplot layout 4,1
 
-data = "tra.txt"
+data = "lam.txt"
 
 set xlabel "Lagrange Multiplier"
-set ylabel "Quadratic Loss"
-set ytics nomirror tc "red"
-set y2label "Schrodinger Loss" rotate by 270
-set y2tics tc "blue"
-
-#set logscale y
-#set logscale y2
+set ylabel "Total Loss"
+#set ytics nomirror tc "red"
+#set y2label "Schrodinger Loss" rotate by 270
+#set y2tics tc "blue"
 
 unset key
 
-#set xrange[0:1.5]
+set xtics nomirror
+
+#set key horizontal center bottom
+
+set logscale y; set format y "10^{%L}"
+#set logscale y2
+
+#set xrange[0:0.8]
 
 lw = 2
-set title "2 site state 1"
-plot data u 1:2 w l lw lw lc rgb "red" title "C_1", \
-	 data u 1:6 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
-
-set title "2 site state 2"
-plot data u 1:3 w l lw lw lc rgb "red" title "C_1", \
-	 data u 1:7 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
-
-set title "2 site state 3"
-plot data u 1:4 w l lw lw lc rgb "red" title "C_1", \
-	 data u 1:8 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
-
-set title "2 site state 4"
-plot data u 1:5 w l lw lw lc rgb "red" title "C_1", \
-	 data u 1:9 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
-
-#set title "4 site state 1"
+#set title "2 site state 1"
 #plot data u 1:2 w l lw lw lc rgb "red" title "C_1", \
-     #data u 1:18 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
+	 #data u 1:6 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
 
-#set title "4 site state 2"
+#set title "2 site state 2"
 #plot data u 1:3 w l lw lw lc rgb "red" title "C_1", \
-     #data u 1:19 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
+	 #data u 1:7 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
 
-#set title "4 site state 3"
+#set title "2 site state 3"
 #plot data u 1:4 w l lw lw lc rgb "red" title "C_1", \
-     #data u 1:20 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
+	 #data u 1:8 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
 
-#set title "4 site state 4"
+#set title "2 site state 4"
 #plot data u 1:5 w l lw lw lc rgb "red" title "C_1", \
-     #data u 1:21 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
+	 #data u 1:9 axes x1y2 w l lw lw lc rgb "blue" title "C_2"
 
+set title "4 site state 1"
+plot data u 1:($2+$6) w p pt 7 ps 0.5 lc rgb "blue" title "data"
+
+set title "4 site state 2"
+plot data u 1:($3+$7) w p pt 7 ps 0.5 lc rgb "blue" title "data"
+
+set title "4 site state 3"
+plot data u 1:($4+$8) w p pt 7 ps 0.5 lc rgb "blue" title "data"
+
+set title "4 site state 4"
+plot data u 1:($5+$9) w p pt 7 ps 0.5 lc rgb "blue" title "data"
+
+##############
 #set title "4 site state 5"
 #plot data u 1:6 w l lw lw lc rgb "red" title "C_1", \
      #data u 1:22 axes x1y2 w l lw lw lc rgb "blue" title "C_2"

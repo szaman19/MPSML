@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-//                         *** datgen main.cxx ***                           //
+//                           *** dump main.cxx ***                           //
 //                                                                           //
 // created December 12, 2019                                                 //
 // copyright Christopher N. Singh Binghamton University Physics              //
@@ -11,30 +11,23 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <Eigen/Sparse>
-#include <gendat/Fields.hpp>
-#include <gendat/Generator.hpp>
-#include <gendat/Operators.hpp>
+#include <dump/Reader.hpp>
 
 int main(int argc, char *argv[])
 {
-	if (argc != 5)
+	if (argc != 3)
 	{
 		if (argv[0])
 		{
 			std::cout << " Usage: " << argv[0];
 			std::cout << " <num_qubits> ";
-			std::cout << " <num_transverse_fields> ";
-			std::cout << " <num_disorder_realizations> ";
 			std::cout << " <fpath>";
 			std::cout << std::endl;
 		}
 		else
 		{
-			std::cout << " Usage: datgen.x";
+			std::cout << " Usage: dump";
 			std::cout << " <num_qubits> ";
-			std::cout << " <num_transverse_fields> ";
-			std::cout << " <num_disorder_realizations> ";
 			std::cout << " <fpath>";
 			std::cout << std::endl;
 		}
@@ -43,20 +36,16 @@ int main(int argc, char *argv[])
 	}
 
 	std::stringstream a1(argv[1]);
-	std::stringstream a2(argv[2]);
-	std::stringstream a3(argv[3]);
 
-	int num_qubits, num_transverse_fields, num_disorder_realizations;
+	int num_qubits;
 
 	a1 >> num_qubits;
-	a2 >> num_transverse_fields;
-	a3 >> num_disorder_realizations;
 
-	Generator<double> generator(num_qubits, num_transverse_fields, num_disorder_realizations);	
+	Reader<double> reader(num_qubits, argv[2]);	
 
-	generator.set_dump_location(argv[4]);
+	reader.read();
 
-	generator.run();
+	reader.print();
 
 	return 0;
 }

@@ -23,9 +23,6 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 	int dim = dataset.num_eigenvectors();
 	T out = 0;
 
-	if (epoch % 10 == 0 && epoch != 0)
-	{
-	
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_preds(dim, dim);
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_targs(dim, dim);
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_final(dim, dim);
@@ -51,15 +48,17 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 
 			normalized_final += normalized_preds.transpose() * normalized_targs;
 
-			//out += (normalized_preds.transpose() * normalized_targs).norm();
+			//std::cout << "#### BATCH: " << batch << " INSTANCE: " << instance << " PREDS";
+			//pretty_print(normalized_preds);
+			//std::cout << "#### BATCH: " << batch << " INSTANCE: " << instance << " TARGS";
+			//pretty_print(normalized_targs);
 		}
 	}
 
 	normalized_final /= dataset.num_testing_instances();
 
+	std::cout << "Average \n";
 	pretty_print(normalized_final);
-
-	} // temporary if statement 
 
 	return out / (dataset.num_testing_instances() * std::sqrt(dim));	
 }
@@ -105,16 +104,35 @@ void Model<T>::pretty_print(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynami
 template <typename T>
 void Model<T>::learn_from(const Dataset<T>& dataset)
 {
-	for (int batch = 0; batch < dataset.num_training_batches(); ++batch)
+	std::vector<int> batch_indices(dataset.num_training_batches());
+
+	std::iota(batch_indices.begin(), batch_indices.end(), 0);
+
+	std::random_device rd;	
+	std::default_random_engine engine(rd());
+
+	std::shuffle(batch_indices.begin(), batch_indices.end(), engine);
+
+
+	for (auto batch : batch_indices)
 	{
+		#ifdef _OPENMP
+		#pragma omp parallel for
+		#endif
 		for (std::size_t net = 0; net < networks.size(); ++net)
 			networks[net].feedforward(dataset.training_feature_batch(batch));
 
 		loss.compute(networks, dataset, batch);
 
+		#ifdef _OPENMP
+		#pragma omp parallel for
+		#endif
 		for (std::size_t net = 0; net < networks.size(); ++net)
 			networks[net].backpropagate();
 
+		#ifdef _OPENMP
+		#pragma omp parallel for
+		#endif
 		for (std::size_t net = 0; net < networks.size(); ++net)
 			optimizer.update(networks[net]);
 	}
@@ -147,221 +165,9 @@ T Model<T>::mse(const Dataset<T>& dataset)
 }
 
 
-//template <typename T>
-//T Model<T>::mse(const Dataset<T>& dataset, std::string split)
-//{
-	//Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic> 
-		//tmp(dataset.target_length(), dataset.batch_size);
-
-	//tmp.setZero();
-
-	//if (split == "training")
-	//{
-		//for (int batch = 0; batch < dataset.num_training_batches(); ++batch)
-		//{
-			//m_net.feedforward(dataset.training_feature_batch(batch));
-			//loss.compute(m_net, dataset, batch);
-			//tmp += (m_net.layers.back().errors).array().square();
-		//}
-
-		//return tmp.mean() / dataset.num_training_batches();
-	//}
-	//else if (split == "validation")
-	//{
-		//for (int batch = 0; batch < dataset.num_validation_batches(); ++batch)
-		//{
-			//m_net.feedforward(dataset.validation_feature_batch(batch));
-			//loss.compute(m_net, dataset, batch);
-			//tmp += (m_net.layers.back().errors).array().square();
-		//}
-
-		//return tmp.mean() / dataset.num_validation_batches();
-	//}
-	//else if (split == "testing")
-	//{
-		//for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
-		//{
-			//m_net.feedforward(dataset.testing_feature_batch(batch));
-			//loss.compute(m_net, dataset, batch);
-			//tmp += (m_net.layers.back().errors).array().square();
-		//}
-
-		//return tmp.mean() / dataset.num_testing_batches();
-	//}
-	//else
-	//{
-		//std::cerr << "ERROR IN MSE FUNCTION\n";
-		//exit(-1);
-	//}
-//}
-
-//template <typename T>
-//void Model<T>::write_schrodinger_error(const Dataset<T> &dataset, std::string filename, int epoch)
-//{
-	//std::ofstream file(filename + "-epoch=" + std::to_string(epoch) + ".dat");
-	//long idx;
-
-	//int batch_shifted_instance;
-	//Eigen::MatrixXd c2_error(dataset.target_length(), dataset.batch_size);
-	//Eigen::VectorXd tmp(dataset.target_length());
-	//int eigen_index;
-	//T E;
-
-	//if (file.is_open())
-	//{
-		//file << "#Field   ||Schrodinger Error||^2   <Schrodinger Error>  \n";
-		//file << std::scientific;
-
-		//for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
-		//{
-			//m_net.feedforward(dataset.testing_feature_batch(batch));
-
-			//for (int instance = 0; instance < dataset.batch_size; ++instance)
-			//{
-				//idx = static_cast<long>(instance);
-
-				//for (int i = 0; i < dataset.feature_length(); ++i)
-				//{
-					//file << std::setw(8);
-					//file << m_net.layers[0].states.col(idx)(static_cast<long>(i)) << '\t';
-				//}
 
 
-				//batch_shifted_instance = instance + batch * dataset.batch_size;
-				//eigen_index = static_cast<int>(instance);
 
-				////tmp = dataset.sparse_ham_times_vec(batch_shifted_instance, 
-						////m_net.layers.back().states.col(eigen_index));
-
-				////E = dataset.energy(batch_shifted_instance);
-
-				////c2_error.col(eigen_index) = 
-					////dataset.sparse_ham_times_vec(batch_shifted_instance, tmp) +
-					////m_net.layers.back().states.col(eigen_index) * E * E - 2 * tmp * E;
-
-				//file << std::setw(8) << std::right;
-				//file << c2_error.norm() * c2_error.norm() << '\t';
-				//file << std::setw(8) << std::right;
-				//file << c2_error.mean() << '\n';
-				
-			//}
-		//}
-	//}
-	//else
-	//{
-		//open_ascii_escape("red");
-		//std::cerr << "\nERROR!: FAILED TO WRITE SCHRODINGER ERROR\n";
-		//std::cerr << std::endl;
-		//close_ascii_escape();
-	//}
-
-//}
-
-
-//template <typename T>
-//void Model<T>::write_average_magnetization(const Dataset<T> &dataset, std::string filename, int epoch)
-//{
-	//std::ofstream file(filename + "-epoch=" + std::to_string(epoch) + ".dat");
-	//long idx, idi;
-
-	//T avg_of_value, avg_of_square;
-	//T coeff_squared, coeff;
-
-	//Eigen::VectorXd szdiag = dataset.szdiag();
-
-	//if (file.is_open())
-	//{
-		//file << "#Field   <Sz>   <Sz^2>   <Sz>^2 \n";
-		//file << std::scientific;
-
-		//for (int batch = 0; batch < dataset.batches(); ++batch)
-		//{
-			//m_net.feedforward(dataset.feature_batch(batch));
-
-			//for (int instance = 0; instance < dataset.batch_size; ++instance)
-			//{
-				//idx = static_cast<long>(instance);
-
-				//for (int i = 0; i < dataset.feature_length(); ++i)
-				//{
-					//file << std::setw(8);
-					//file << m_net.layers[0].states.col(idx)(static_cast<long>(i)) << '\t';
-				//}
-
-				//avg_of_value = 0;
-				//avg_of_square = 0;
-
-				//for (int i = 0; i < dataset.target_length(); ++i) 
-				//{
-					//idi = static_cast<long>(i);
-					//coeff = m_net.layers.back().states.col(idx)(idi);
-					//coeff_squared = coeff * coeff;
-					//avg_of_value += szdiag(idi) * coeff_squared; 
-					//avg_of_square += szdiag(idi) * szdiag(idi) * coeff_squared;
-				//}
-				
-				//file << std::setw(8) << std::right;
-				//file << avg_of_value << '\t';
-				//file << std::setw(8) << std::right;
-				//file << avg_of_square << '\t';	
-				//file << std::setw(8) << std::right;
-				//file << avg_of_value * avg_of_value << '\t';
-				//file << '\n';
-			//}
-		//}
-	//}
-	//else
-	//{
-		//open_ascii_escape("red");
-		//std::cerr << "\nERROR!: FAILED TO WRITE COEFFICIENTS\n";
-		//std::cerr << std::endl;
-		//close_ascii_escape();
-	//}
-
-//}
-
-//template <typename T>
-//void Model<T>::write_coefficients(const Dataset<T> &dataset, std::string filename, int epoch)
-//{
-	//std::ofstream file(filename + "-epoch=" + std::to_string(epoch) + ".dat");
-	//long idx;
-
-	//if (file.is_open())
-	//{
-		//file << std::scientific;
-
-		//for (int batch = 0; batch < dataset.batches(); ++batch)
-		//{
-			//m_net.feedforward(dataset.feature_batch(batch));
-
-			//for (int instance = 0; instance < dataset.batch_size; ++instance)
-			//{
-				//idx = static_cast<long>(instance);
-
-				//for (int i = 0; i < dataset.feature_length(); ++i)
-				//{
-					//file << std::setw(8);
-					//file << m_net.layers[0].states.col(idx)(static_cast<long>(i)) << '\t';
-				//}
-
-				//for (int i = 0; i < dataset.target_length(); ++i) 
-				//{
-					//file << std::setw(20) << std::right;
-					//file << m_net.layers.back().states.col(idx)(static_cast<long>(i)) << '\t';
-				//}
-				
-				//file << '\n';
-			//}
-		//}
-	//}
-	//else
-	//{
-		//open_ascii_escape("red");
-		//std::cerr << "\nERROR!: FAILED TO WRITE COEFFICIENTS\n";
-		//std::cerr << std::endl;
-		//close_ascii_escape();
-	//}
-//}
 
 
 //template <typename T>

@@ -1,26 +1,26 @@
 
 
 chain = clean-Ising
-qubits = 2
+qubits = 4
 
 
-instances = 1000
+instances = 10000
 batch_size = 1
 loss_type = bb
 
 
 num_hidden_layers = 1
-hidden_layer_size = 10
+hidden_layer_size = 30
 
 
-#trade_off_parameter = xx
-#lagrange_multiplier = 1
-#random_domain_bound = xx
+#learning_rate = 0.01
+#trade_off_parameter = 0.01
+lagrange_multiplier = 0.5
+#random_domain_bound = 0.01
 
 
-#epochs = 1000
+epochs = 50
 
 
-#cutout_option = false
-#learning_rate = 0.1
+cutout_option = false
 #optimizer = adadelta

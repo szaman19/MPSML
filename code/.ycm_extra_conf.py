@@ -43,7 +43,8 @@ flags = [
     '-Iinclude',
     '-Isrc',
     '-I/usr/local/include/Eigen-3.3.7',
-    '-I/usr/local/include/Eigen-3.3.7/unsupported'
+    '-I/usr/local/include/Eigen-3.3.7/unsupported',
+    '-I/opt/intel/compilers_and_libraries_2019.5.281/linux/mpi/intel64/include'
 ]
 
 
