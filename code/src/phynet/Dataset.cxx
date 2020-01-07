@@ -10,15 +10,17 @@
 #include <phynet/Dataset.hpp>
 
 template <typename T>
-Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size, int num_instances)
-	: batch_size(batch_size), num_qubits(num_qubits), num_instances(num_instances), fpath(fpath)
+Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size)
+	: batch_size(batch_size), num_qubits(num_qubits), fpath(fpath)
 { 
-	dim = (int)(pow(2, num_qubits) + 0.5);
+	this->dim = (int)(pow(2, num_qubits) + 0.5);
+	long offset = (3*num_qubits + dim + dim*dim)*sizeof(T);
+	this->num_instances = boost::filesystem::file_size(fpath)/offset;
+	
 	init_pos();
 
-	std::cout << "Gathering necessary virtual memory...\n";
+	std::cout << "Gathering necessary virtual memory..." << std::endl;
 	allocate();
-	//std::cout << "done\n";
 
 	if (num_instances < batch_size)
 	{
@@ -29,11 +31,11 @@ Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size, int num_i
 	if ((3*num_qubits + dim + dim*dim)*num_instances*sizeof(T) > 
 			boost::filesystem::file_size(fpath))
 	{
-		std::cerr << "ERROR!: REQUESTED MORE INSTANCES THAN EXIST IN FILE\n";
+		std::cerr << "ERROR!: REQUESTED MORE INSTANCES THAN EXIST IN FILE" << std::endl;
 		exit(-1);
 	}
 
-	import(num_instances);
+	import();
 }
 
 template <typename T>
@@ -117,15 +119,14 @@ void Dataset<T>::fill(int pos_lower_idx, int num_batches,
 }
 
 template <typename T>
-void Dataset<T>::import(int num_instances)
+void Dataset<T>::import(void)
 {
-	std::cout << "Importing " << num_instances << " instances from " << fpath << '\n';
-			  
-	this->num_instances = num_instances;
 
-	std::random_device rd;	
-	std::default_random_engine engine(rd());
-	std::shuffle(pos.begin(), pos.end(), engine);
+	std::cout << "Importing " << num_instances << " instances from " << fpath << '\n';
+
+	//std::random_device rd;	
+	//std::default_random_engine engine(rd());
+	//std::shuffle(pos.begin(), pos.end(), engine);
 
 	int lower_training_index = 0;		
 	int lower_validation_index = (int)(num_instances * PERCENT_TRAINING);

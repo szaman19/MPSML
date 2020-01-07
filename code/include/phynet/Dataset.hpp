@@ -33,8 +33,7 @@ template <typename T>
 class Dataset  
 {
 	public:
-		Dataset(int num_qubits, std::string fpath, 
-				int batch_size, int num_instances);
+		Dataset(int num_qubits, std::string fpath, int batch_size);
 
 		const Batch<T>& training_energy_batch(int batch) const;
 		const Batch<T>& validation_energy_batch(int batch) const;
@@ -60,7 +59,7 @@ class Dataset
 		int num_validation_instances(void) const;
 		int num_testing_instances(void) const;
 
-		void import(int num_instances);
+		void import(void);
 
 		void shuffle(void);
 

@@ -27,7 +27,7 @@ class Model
 
 		T mse(const Dataset<T>& dataset);
 
-		T predictive_power(const Dataset<T>& dataset, int epoch);
+		void predictive_power(const Dataset<T>& dataset);
 
 		Eigen::RowVectorXd pure_cost(const Dataset<T>& dataset);
 

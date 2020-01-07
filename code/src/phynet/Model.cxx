@@ -18,7 +18,7 @@ Model(const std::vector<Network<T>>& networks, const Loss<T>& loss, const Optimi
 }
 
 template <typename T>
-T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
+void Model<T>::predictive_power(const Dataset<T>& dataset)
 {
 	int dim = dataset.num_eigenvectors();
 	T out = 0;
@@ -58,7 +58,7 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 	std::cout << "\nDeterminant: " << normalized_final.determinant() << '\n';
 	std::cout << "\nNorm: " << (1.0 / std::sqrt(dim)) * normalized_final.norm() << "\n\n";
 
-	return out / (dataset.num_testing_instances() * std::sqrt(dim));	
+	//return out / (dataset.num_testing_instances() * std::sqrt(dim));	
 	//return normalized_final.determinant();	
 }
 

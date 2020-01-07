@@ -97,9 +97,9 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("seed").empty() ?
 		0 : std::atoi(parser.value_of_key("seed").c_str());
 	
-	const int instances = 
-		parser.value_of_key("instances").empty() ?
-		100000 : std::atoi(parser.value_of_key("instances").c_str());
+	//const int instances = 
+		//parser.value_of_key("instances").empty() ?
+		//100000 : std::atoi(parser.value_of_key("instances").c_str());
 	
 	const std::string target_activation_type = 
 		parser.value_of_key("target_activation").empty() ? 
@@ -121,7 +121,8 @@ int main( int argc, char *argv[] )
 	
 	const std::string data_path = base_input_dir + qubits + "-qubits.bin";
 
-	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size, instances);
+	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size);
+	//Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size, instances);
 
 	const int input_layer_size = dataset.feature_length();
 	const int output_layer_size = dataset.target_length();
@@ -226,7 +227,6 @@ int main( int argc, char *argv[] )
 			
 			std::cout << epoch << '\t' << mse_history.back() << std::endl;
 
-
 			model.learn_from(dataset);
 
 			//if (parser.value_of_key("shuffle") == "true")
@@ -235,7 +235,7 @@ int main( int argc, char *argv[] )
 
 	}
 
-	model.predictive_power(dataset, 0);
+	model.predictive_power(dataset);
 
 	std::cout << std::scientific;
 	std::cout << lagrange_multiplier << '\t' << model.pure_cost(dataset) << '\n';

@@ -4,13 +4,12 @@ chain = clean-Ising
 qubits = 4
 
 
-instances = 100
 batch_size = 1
-loss_type = bb
+loss_type = rd
 
 
 num_hidden_layers = 1
-hidden_layer_size = 20
+hidden_layer_size = 14
 
 
 #learning_rate = 0.01
@@ -19,8 +18,8 @@ hidden_layer_size = 20
 #random_domain_bound = 0.01
 
 
-epochs = 500
+epochs = 10
 
 
-cutout_option = false
+#cutout_option = false
 #optimizer = adadelta

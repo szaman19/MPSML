@@ -56,7 +56,8 @@ void Generator<T>::run(void) const
 				exit(-1);
 			}
 
-			Instance<T>(fields, solver).append_to_file(fpath);
+			if (solver.eigenvectors().col(0).mean() > 0)
+				Instance<T>(fields, solver).append_to_file(fpath);
 		}
 	}
 }
