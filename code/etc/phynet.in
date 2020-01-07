@@ -4,22 +4,22 @@ chain = clean-Ising
 qubits = 4
 
 
-instances = 10000
+instances = 100
 batch_size = 1
 loss_type = bb
 
 
 num_hidden_layers = 1
-hidden_layer_size = 30
+hidden_layer_size = 20
 
 
 #learning_rate = 0.01
 #trade_off_parameter = 0.01
-lagrange_multiplier = 0.5
+#lagrange_multiplier = 0.2
 #random_domain_bound = 0.01
 
 
-epochs = 50
+epochs = 500
 
 
 cutout_option = false

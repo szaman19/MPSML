@@ -47,20 +47,19 @@ T Model<T>::predictive_power(const Dataset<T>& dataset, int epoch)
 			}
 
 			normalized_final += normalized_preds.transpose() * normalized_targs;
-
-			//std::cout << "#### BATCH: " << batch << " INSTANCE: " << instance << " PREDS";
-			//pretty_print(normalized_preds);
-			//std::cout << "#### BATCH: " << batch << " INSTANCE: " << instance << " TARGS";
-			//pretty_print(normalized_targs);
 		}
 	}
 
 	normalized_final /= dataset.num_testing_instances();
 
-	std::cout << "Average \n";
+	std::cout << "\nAverage \n";
 	pretty_print(normalized_final);
 
+	std::cout << "\nDeterminant: " << normalized_final.determinant() << '\n';
+	std::cout << "\nNorm: " << (1.0 / std::sqrt(dim)) * normalized_final.norm() << "\n\n";
+
 	return out / (dataset.num_testing_instances() * std::sqrt(dim));	
+	//return normalized_final.determinant();	
 }
 
 template <typename T>

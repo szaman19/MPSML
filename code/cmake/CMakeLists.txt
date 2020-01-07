@@ -19,7 +19,7 @@ find_package(Boost REQUIRED COMPONENTS random filesystem)
 
 #find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(ArrayFire NO_MODULE)
+#find_package(ArrayFire NO_MODULE)
 
 find_package(Eigen3 3.3.7 REQUIRED NO_MODULE) 
 include_directories(../lib/eigen ../lib/eigen/unsupported)

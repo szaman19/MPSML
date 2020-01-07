@@ -135,7 +135,7 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 
 		// 6. 
 		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			nets[vec].layers.back().errors.col(instance) += SCHRO.col(instance);
+			nets[vec].layers.back().errors.col(instance) -= SCHRO.col(instance);
 	}	
 
 	// 7.
