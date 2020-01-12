@@ -112,7 +112,7 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 
 	int dim = data.num_eigenvectors(); 
 
-	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), SCHRO(dim, dim);
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
 	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
 
 	for (int instance = 0; instance < data.batch_size; ++instance)
@@ -131,11 +131,12 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
 
 		// 5. Schrodinger loss
-		SCHRO = H * H * P * L + P * E * L * E - (H * P * E * L + H * P * L * E);
+		S = H * H * P * L + P * E * L * E - (H * P * E * L + H * P * L * E);
 
 		// 6. 
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			nets[vec].layers.back().errors.col(instance) -= SCHRO.col(instance);
+		for (int vec = 0; vec < data.num_eigenvectors(); ++vec) {
+			nets[vec].layers.back().errors.col(instance) += S.col(vec);
+		}
 	}	
 
 	// 7.
@@ -144,6 +145,41 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 		nets[vec].layers.back().errors.array() *= 
 			nets[vec].layers.back().derivative_of_activation_on_weighted_sum();
 	}
+}
+
+template <typename T>
+void Loss<T>::unsupervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+		{
+			P.col(vec) = nets[vec].layers.back().states.col(instance) / 
+				nets[vec].layers.back().states.col(instance).norm();
+		}
+
+		H = this->operators.hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+
+		S = H * H * P * L + P * E * L * E - (H * P * E * L + H * P * L * E);
+
+		for (int vec = 0; vec < data.num_eigenvectors(); ++vec) {
+			nets[vec].layers.back().errors.col(instance) += S.col(vec);
+		}
+	}	
+
+	for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+	{
+		nets[vec].layers.back().errors.array() *= 
+			nets[vec].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+
 }
 
 template <typename T>

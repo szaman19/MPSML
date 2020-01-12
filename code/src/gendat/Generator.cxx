@@ -21,8 +21,9 @@ Generator<T>::Generator(int num_qubits, int num_transverse, int num_realizations
 template <typename T>
 void Generator<T>::set_dump_location(std::string fpath)
 {
-	prompt_if_file(fpath);
+	//prompt_if_file(fpath);
 	this->fpath = fpath;
+	if (boost::filesystem::exists(fpath)) boost::filesystem::remove(fpath);
 	ready_to_dump = true;
 }
 
@@ -56,7 +57,7 @@ void Generator<T>::run(void) const
 				exit(-1);
 			}
 
-			if (solver.eigenvectors().col(0).mean() > 0)
+			if (solver.eigenvectors().col(0).mean() < 0)
 				Instance<T>(fields, solver).append_to_file(fpath);
 		}
 	}

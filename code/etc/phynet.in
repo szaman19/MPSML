@@ -1,25 +1,22 @@
 
-
+# ----- REQUIRED ------ #
 chain = clean-Ising
 qubits = 4
 
 
+# ----- OPTIONAL ------ #
 batch_size = 1
-loss_type = rd
-
+loss_type = c2
 
 num_hidden_layers = 1
 hidden_layer_size = 14
+hidden_layer_dimensions = " 5,3,2,4,5 " 
 
+epochs = 100
 
 #learning_rate = 0.01
 #trade_off_parameter = 0.01
-#lagrange_multiplier = 0.2
-#random_domain_bound = 0.01
-
-
-epochs = 10
-
-
-#cutout_option = false
+lagrange_multiplier = 0.1
+random_domain_bound = 0.00
+cutout_option = false
 #optimizer = adadelta

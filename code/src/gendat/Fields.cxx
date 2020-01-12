@@ -20,7 +20,7 @@ Fields<T>::Fields(int num_qubits, T J, T Bx, T Bz, T W)
 	{
 		coupling.push_back(J + dist(engine));
 		transverse.push_back(Bx + dist(engine));
-		longitudinal.push_back(Bz*(0.9*i) + dist(engine));
+		longitudinal.push_back((1.0/num_qubits)*(i+1) + dist(engine));
 	}
 }
 

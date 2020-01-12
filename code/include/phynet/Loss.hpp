@@ -54,6 +54,7 @@ class Loss
 
 		void quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void unsupervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void randomly_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
 };
