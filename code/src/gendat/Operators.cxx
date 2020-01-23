@@ -29,6 +29,22 @@ Operators<T>::Operators(int num_qubits) : num_qubits(num_qubits)
 		longitudinal_stencils[site].makeCompressed();
 		transverse_stencils[site].makeCompressed();
 	}
+	Eigen::SparseMatrix<T> term1, term2, term3, out;
+	
+	term1 = coupling_stencils[0];
+	term2 = transverse_stencils[0];
+	term3 = longitudinal_stencils[0];
+
+	for (int qubit = 1; qubit < num_qubits; ++qubit)
+	{
+		term1 += coupling_stencils[qubit];
+		term2 += transverse_stencils[qubit];
+		term3 += longitudinal_stencils[qubit];
+	}
+
+	out = term1 + term2 + term3;
+
+	ham_nnz = out.nonZeros();
 }
 
 template <typename T>

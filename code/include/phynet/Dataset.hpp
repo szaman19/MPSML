@@ -17,10 +17,11 @@
 #include <nixio/nixio.hpp>
 #include <gendat/Fields.hpp>
 #include <boost/filesystem.hpp>
+#include <gendat/Operators.hpp>
 
-#define PERCENT_TRAINING 0.8
+#define PERCENT_TRAINING 0.01
 #define PERCENT_VALIDATION 0.1
-#define PERCENT_TESTING 0.1
+#define PERCENT_TESTING 0.90
 #define NUM_HAM_PARAM 3
 
 template <typename T>
@@ -33,7 +34,8 @@ template <typename T>
 class Dataset  
 {
 	public:
-		Dataset(int num_qubits, std::string fpath, int batch_size);
+		Dataset(int num_qubits, std::string fpath, int batch_size, 
+				std::string input, const Operators<T>& operators);
 
 		const Batch<T>& training_energy_batch(int batch) const;
 		const Batch<T>& validation_energy_batch(int batch) const;
@@ -69,6 +71,9 @@ class Dataset
 		void allocate(void);
 		void init_pos(void);
 
+		void fill_hamnze(const std::vector<Batch<T>>& fields_var, 
+				std::vector<Batch<T>>& hamnze_var);
+
 		void fill(int pos_lower_idx, int num_batches,
 				std::vector<Batch<T>>& fields_var, 
 				std::vector<Batch<T>>& energy_var, 
@@ -76,19 +81,24 @@ class Dataset
 
 		int num_qubits, num_instances, dim;
 
-		std::string fpath;
+		std::string fpath, input;
+
+		Operators<T> operators;
 
 		std::vector<std::streampos> pos;
 
 		std::vector<Batch<T>> training_fields;
+		std::vector<Batch<T>> training_hamnze;
 		std::vector<Batch<T>> training_energy;
 		std::vector<Waves<T>> training_wavefx;
 
 		std::vector<Batch<T>> validation_fields;
+		std::vector<Batch<T>> validation_hamnze;
 		std::vector<Batch<T>> validation_energy;
 		std::vector<Waves<T>> validation_wavefx;
 
 		std::vector<Batch<T>> testing_fields;
+		std::vector<Batch<T>> testing_hamnze;
 		std::vector<Batch<T>> testing_energy;
 		std::vector<Waves<T>> testing_wavefx;
 };

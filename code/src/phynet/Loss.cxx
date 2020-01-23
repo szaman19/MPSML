@@ -46,27 +46,27 @@ Eigen::RowVectorXd Loss<T>::pure_cost(NetVec<T>& nets, const Dataset<T>& data)
 
 	for (int batch = 0; batch < data.num_testing_batches(); ++batch)
 	{
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			nets[vec].feedforward(data.testing_feature_batch(batch));
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].feedforward(data.testing_feature_batch(batch));
 
 		for (int instance = 0; instance < data.batch_size; ++instance)
 		{
-			for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+			for (std::size_t net = 0; net < nets.size(); ++net)
 			{
-				P.col(vec) = nets[vec].layers.back().states.col(instance) / 
-					nets[vec].layers.back().states.col(instance).norm();
+				P.col(net) = nets[net].layers.back().states.col(instance) / 
+					nets[net].layers.back().states.col(instance).norm();
 			}
 
 			H = this->operators.hamiltonian(data.testing_feature_batch(batch).col(instance).data());
 
 			E = this->operators.energy(data.testing_energy_batch(batch).col(instance).data());	
 
-			for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+			for (std::size_t net = 0; net < nets.size(); ++net)
 			{
-				out(0, vec) += 0.5 * (data.testing_target_batch(batch, vec).col(instance) -
-					nets[vec].layers.back().states.col(instance)).cwiseAbs2().sum();	
+				out(0, net) += 0.5 * (data.testing_target_batch(batch, net).col(instance) -
+					nets[net].layers.back().states.col(instance)).cwiseAbs2().sum();	
 
-				out(1, vec) += 0.5 * (H * P - P * E).col(vec).cwiseAbs2().sum();
+				out(1, net) += 0.5 * (H * P - P * E).col(net).cwiseAbs2().sum();
 			}
 		}	
 	}
@@ -80,13 +80,13 @@ Eigen::RowVectorXd Loss<T>::pure_cost(NetVec<T>& nets, const Dataset<T>& data)
 template <typename T>
 void Loss<T>::quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
-	for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+	for (std::size_t net = 0; net < nets.size(); ++net)
 	{
-		nets[vec].layers.back().errors = 
-			nets[vec].layers.back().states - data.training_target_batch(batch, vec);
+		nets[net].layers.back().errors = 
+			nets[net].layers.back().states - data.training_target_batch(batch, net);
 
-		nets[vec].layers.back().errors.array() *= 
-			nets[vec].layers.back().derivative_of_activation_on_weighted_sum();
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
 	}
 }
 
@@ -104,10 +104,10 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 	*/
 
 	// 1. 
-	for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+	for (std::size_t net = 0; net < nets.size(); ++net)
 	{
-		nets[vec].layers.back().errors = 
-			nets[vec].layers.back().states - data.training_target_batch(batch, vec);
+		nets[net].layers.back().errors = 
+			nets[net].layers.back().states - data.training_target_batch(batch, net);
 	}
 
 	int dim = data.num_eigenvectors(); 
@@ -118,10 +118,10 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 	for (int instance = 0; instance < data.batch_size; ++instance)
 	{
 		// 2. 
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+		for (std::size_t net = 0; net < nets.size(); ++net)
 		{
-			P.col(vec) = nets[vec].layers.back().states.col(instance) / 
-				nets[vec].layers.back().states.col(instance).norm();
+			P.col(net) = nets[net].layers.back().states.col(instance) / 
+				nets[net].layers.back().states.col(instance).norm();
 		}
 
 		// 3. 
@@ -134,16 +134,52 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 		S = H * H * P * L + P * E * L * E - (H * P * E * L + H * P * L * E);
 
 		// 6. 
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec) {
-			nets[vec].layers.back().errors.col(instance) += S.col(vec);
-		}
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += S.col(net);
+		 
 	}	
 
 	// 7.
-	for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+	for (std::size_t net = 0; net < nets.size(); ++net)
 	{
-		nets[vec].layers.back().errors.array() *= 
-			nets[vec].layers.back().derivative_of_activation_on_weighted_sum();
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+}
+
+template <typename T>
+void Loss<T>::supervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim), G(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		for (std::size_t net = 0; net < nets.size(); ++net)
+		{
+			P.col(net) = nets[net].layers.back().states.col(instance) / 
+				nets[net].layers.back().states.col(instance).norm();
+
+			G.col(net) = data.training_target_batch(batch, net).col(instance);
+		}
+
+		H = this->operators.hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+	
+		S = (H * H) * (P - G) * L;
+		//S = H * H * P * L - H * G * E * L;
+
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += S.col(net);
+	}	
+
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
 	}
 }
 
@@ -157,10 +193,10 @@ void Loss<T>::unsupervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, 
 
 	for (int instance = 0; instance < data.batch_size; ++instance)
 	{
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+		for (std::size_t net = 0; net < nets.size(); ++net)
 		{
-			P.col(vec) = nets[vec].layers.back().states.col(instance) / 
-				nets[vec].layers.back().states.col(instance).norm();
+			P.col(net) = nets[net].layers.back().states.col(instance) / 
+				nets[net].layers.back().states.col(instance).norm();
 		}
 
 		H = this->operators.hamiltonian(data.training_feature_batch(batch).col(instance).data());
@@ -169,29 +205,27 @@ void Loss<T>::unsupervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, 
 
 		S = H * H * P * L + P * E * L * E - (H * P * E * L + H * P * L * E);
 
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec) {
-			nets[vec].layers.back().errors.col(instance) += S.col(vec);
-		}
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += S.col(net);
 	}	
 
-	for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+	for (std::size_t net = 0; net < nets.size(); ++net)
 	{
-		nets[vec].layers.back().errors.array() *= 
-			nets[vec].layers.back().derivative_of_activation_on_weighted_sum();
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
 	}
-
 }
 
 template <typename T>
 void Loss<T>::physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
-	for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+	for (std::size_t net = 0; net < nets.size(); ++net)
 	{
-		nets[vec].layers.back().errors = 
-			nets[vec].layers.back().states - data.training_target_batch(batch, vec);
+		nets[net].layers.back().errors = 
+			nets[net].layers.back().states - data.training_target_batch(batch, net);
 		
-		nets[vec].layers.back().errors.array() *= 
-			nets[vec].layers.back().derivative_of_activation_on_weighted_sum();
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
 	}
 	
 	int dim = data.num_eigenvectors(); 
@@ -201,10 +235,10 @@ void Loss<T>::physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& dat
 
 	for (int instance = 0; instance < data.batch_size; ++instance)
 	{
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+		for (std::size_t net = 0; net < nets.size(); ++net)
 		{
-			P.col(vec) = nets[vec].layers.back().states.col(instance) / 
-				nets[vec].layers.back().states.col(instance).norm();
+			P.col(net) = nets[net].layers.back().states.col(instance) / 
+				nets[net].layers.back().states.col(instance).norm();
 		}
 
 		H = this->operators.hamiltonian(data.training_feature_batch(batch).col(instance).data());
@@ -214,8 +248,8 @@ void Loss<T>::physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& dat
 		// 5. Schrodinger perturbation 
 		PERT = trade_off_parameter * (H * P - P * E);
 
-		for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
-			nets[vec].layers.back().errors.col(instance) += PERT.col(instance);
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += PERT.col(instance);
 	}	
 }
 
@@ -228,16 +262,52 @@ void Loss<T>::randomly_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& da
 
 	perturbation.setRandom();
 	
-	for (int vec = 0; vec < data.num_eigenvectors(); ++vec)
+	for (std::size_t net = 0; net < nets.size(); ++net)
 	{
-		nets[vec].layers.back().errors = 
-			nets[vec].layers.back().states - data.training_target_batch(batch, vec);
+		nets[net].layers.back().errors = 
+			nets[net].layers.back().states - data.training_target_batch(batch, net);
 		
-		nets[vec].layers.back().errors.array() *= 
-			nets[vec].layers.back().derivative_of_activation_on_weighted_sum();
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
 
-		nets[vec].layers.back().errors += random_domain_bound * perturbation;
+		nets[net].layers.back().errors += random_domain_bound * perturbation;
 	}
+}
+
+template <typename T>
+void Loss<T>::abs_formulation(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		for (std::size_t net = 0; net < nets.size(); ++net)
+		{
+			P.col(net) = nets[net].layers.back().states.col(instance) / 
+				nets[net].layers.back().states.col(instance).norm();
+		}
+
+		H = this->operators.hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+
+		S = 2 * H * P;
+
+		if (std::signbit(E.coeff(0,0) - (P.transpose() * H * P)(0,0)) == -1) S *= -1;
+
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += S.col(net);
+	}	
+
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+
 }
 
 template <typename T>
@@ -269,6 +339,18 @@ void Loss<T>::set_compute_pointer(std::string loss)
 	else if (loss == "c2")
 	{
 		compute = std::bind(&Loss<T>::quadratic_plus_schrodinger, this, _1, _2, _3);
+	}
+	else if (loss == "un")
+	{
+		compute = std::bind(&Loss<T>::unsupervised_schrodinger, this, _1, _2, _3);
+	}
+	else if (loss == "ss")
+	{
+		compute = std::bind(&Loss<T>::supervised_schrodinger, this, _1, _2, _3);
+	}
+	else if (loss == "ab")
+	{
+		compute = std::bind(&Loss<T>::abs_formulation, this, _1, _2, _3);
 	}
 	else if (loss == "pg")
 	{

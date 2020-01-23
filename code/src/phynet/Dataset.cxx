@@ -10,8 +10,14 @@
 #include <phynet/Dataset.hpp>
 
 template <typename T>
-Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size)
-	: batch_size(batch_size), num_qubits(num_qubits), fpath(fpath)
+Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size, 
+		std::string input, const Operators<T>& operators)
+	: 
+	batch_size(batch_size), 
+	num_qubits(num_qubits), 
+	fpath(fpath), 
+	input(input), 
+	operators(operators)
 { 
 	this->dim = (int)(pow(2, num_qubits) + 0.5);
 	long offset = (3*num_qubits + dim + dim*dim)*sizeof(T);
@@ -51,6 +57,7 @@ template <typename T>
 void Dataset<T>::allocate(void)
 {
 	Batch<T> fields(3 * num_qubits, batch_size);
+	Batch<T> hamnze(operators.ham_nnz, batch_size);
 	Batch<T> energy(dim, batch_size);
 	Batch<T> wavefx(dim, batch_size);
 	Waves<T> waves;
@@ -64,6 +71,7 @@ void Dataset<T>::allocate(void)
 	for (int i = 0; i < num_training_batches; ++i) 
 	{
 		training_fields.push_back(fields);
+		training_hamnze.push_back(hamnze);
 		training_energy.push_back(energy);
 		training_wavefx.push_back(waves);
 	}
@@ -71,6 +79,7 @@ void Dataset<T>::allocate(void)
 	for (int i = 0; i < num_validation_batches; ++i)
 	{
 		validation_fields.push_back(fields);
+		validation_hamnze.push_back(hamnze);
 		validation_energy.push_back(energy);
 		validation_wavefx.push_back(waves);
 	}
@@ -78,6 +87,7 @@ void Dataset<T>::allocate(void)
 	for (int i = 0; i < num_testing_batches; ++i)
 	{
 		testing_fields.push_back(fields);
+		testing_hamnze.push_back(hamnze);
 		testing_energy.push_back(energy);
 		testing_wavefx.push_back(waves);
 	}
@@ -121,12 +131,11 @@ void Dataset<T>::fill(int pos_lower_idx, int num_batches,
 template <typename T>
 void Dataset<T>::import(void)
 {
-
 	std::cout << "Importing " << num_instances << " instances from " << fpath << '\n';
 
-	//std::random_device rd;	
-	//std::default_random_engine engine(rd());
-	//std::shuffle(pos.begin(), pos.end(), engine);
+	std::random_device rd;	
+	std::default_random_engine engine(rd());
+	std::shuffle(pos.begin(), pos.end(), engine);
 
 	int lower_training_index = 0;		
 	int lower_validation_index = (int)(num_instances * PERCENT_TRAINING);
@@ -136,6 +145,10 @@ void Dataset<T>::import(void)
 	int num_validation_batches = (int)(num_instances * PERCENT_VALIDATION) / batch_size;
 	int num_testing_batches = (int)(num_instances * PERCENT_TESTING) / batch_size;
 
+	std::cout << "Training batches: " << num_training_batches << '\n';
+	std::cout << "Testing batches: " << num_testing_batches << '\n';
+	std::cout << "Validation batches: " << num_validation_batches << '\n';
+
 	fill(lower_training_index, num_training_batches, 
 			training_fields, training_energy, training_wavefx);
 
@@ -144,6 +157,36 @@ void Dataset<T>::import(void)
 
 	fill(lower_testing_index, num_testing_batches, 
 			testing_fields, testing_energy, testing_wavefx);
+
+	fill_hamnze(training_fields, training_hamnze);
+	fill_hamnze(validation_fields, validation_hamnze);
+	fill_hamnze(testing_fields, testing_hamnze);
+}
+
+
+template <typename T>
+void Dataset<T>::fill_hamnze(const std::vector<Batch<T>>& fields_var,
+		std::vector<Batch<T>>& hamnze_var)
+{
+	Eigen::SparseMatrix<T> tmp;
+	int c;
+
+	for (std::size_t batch = 0; batch < fields_var.size(); ++batch)
+	{
+		for (int instance = 0; instance < batch_size; ++instance)
+		{
+			tmp = operators.hamiltonian(fields_var[batch].col(instance).data());
+
+			c = 0;
+			for (int k = 0; k < tmp.outerSize(); ++k)
+			{
+				for (Eigen::SparseMatrix<double>::InnerIterator it(tmp,k); it; ++it)
+				{
+					hamnze_var[batch].col(instance)(c++) = it.value();
+				}
+			}
+		}
+	}
 }
 
 template <typename T>
@@ -167,13 +210,13 @@ int Dataset<T>::num_testing_instances(void) const
 template <typename T>
 int Dataset<T>::feature_length(void) const 
 {
-	return training_fields[0].rows();
+	return training_feature_batch(0).rows();
 }
 
 template <typename T>
 int Dataset<T>::target_length(void) const 
 {
-	return training_wavefx[0][0].rows();
+	return training_target_batch(0,0).rows();
 }
 
 template <typename T>
@@ -221,17 +264,36 @@ const Batch<T>& Dataset<T>::testing_energy_batch(int batch) const
 template <typename T>
 const Batch<T>& Dataset<T>::training_feature_batch(int batch) const 
 {
-	return training_fields[batch];
+	if (input == "fields") return training_fields[batch];
+	else if (input == "hamnze") return training_hamnze[batch];
+	else
+	{
+		std::cout << "Error in dataset input type\n";
+		exit(-1);
+	}
 }
+
 template <typename T>
 const Batch<T>& Dataset<T>::validation_feature_batch(int batch) const 
 {
-	return validation_fields[batch];
+	if (input == "fields") return validation_fields[batch];
+	else if (input == "hamnze") return validation_hamnze[batch];
+	else
+	{
+		std::cout << "Error in dataset input type\n";
+		exit(-1);
+	}
 }
 template <typename T>
 const Batch<T>& Dataset<T>::testing_feature_batch(int batch) const 
 {
-	return testing_fields[batch];
+	if (input == "fields") return testing_fields[batch];
+	else if (input == "hamnze") return testing_hamnze[batch];
+	else
+	{
+		std::cout << "Error in dataset input type\n";
+		exit(-1);
+	}
 }
 
 template <typename T>

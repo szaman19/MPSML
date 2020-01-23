@@ -25,6 +25,8 @@ class Instance
 
 		void print(void) const;
 
+		void sign_swap(void);
+
 	private:
 		Fields<T> fields;
 		Solver<T> wavefx;

@@ -44,14 +44,18 @@ int main( int argc, char *argv[] )
 	const std::string data_root = 
 		parser.value_of_key("data_root").empty() ? 
 		"data" : parser.value_of_key("data_root");
+	
+	const std::string input = 
+		parser.value_of_key("input").empty() ? 
+		"hamnze" : parser.value_of_key("input");
 
 	const std::string hidden_activation_type = 
 		parser.value_of_key("hidden_activation").empty() ? 
 		"tanh" : parser.value_of_key("hidden_activation");
 	
-	const int hidden_layer_size =
-		parser.value_of_key("hidden_layer_size").empty() ? 
-		100 : std::atoi(parser.value_of_key("hidden_layer_size").c_str());
+	const std::string hidden_layer_dimensions = 
+		parser.value_of_key("hidden_layer_dimensions").empty() ? 
+		" 100 " : parser.value_of_key("hidden_layer_dimensions");
 	
 	const double inactive_threshold = 
 		parser.value_of_key("inactive_threshold").empty() ?
@@ -88,18 +92,14 @@ int main( int argc, char *argv[] )
 	const int memory_window = 
 		parser.value_of_key("memory_window").empty() ?
 		30 : std::atoi(parser.value_of_key("memory_window").c_str());
-
-	const int num_hidden_layers = 
-		parser.value_of_key("num_hidden_layers").empty() ? 
-		1 : std::atoi(parser.value_of_key("num_hidden_layers").c_str());
 	
+	const int num_eigenvectors = 
+		parser.value_of_key("num_eigenvectors").empty() ?
+		1 : std::atoi(parser.value_of_key("num_eigenvectors").c_str());
+
 	const int seed = 
 		parser.value_of_key("seed").empty() ?
 		0 : std::atoi(parser.value_of_key("seed").c_str());
-	
-	//const int instances = 
-		//parser.value_of_key("instances").empty() ?
-		//100000 : std::atoi(parser.value_of_key("instances").c_str());
 	
 	const std::string target_activation_type = 
 		parser.value_of_key("target_activation").empty() ? 
@@ -121,8 +121,8 @@ int main( int argc, char *argv[] )
 	
 	const std::string data_path = base_input_dir + qubits + "-qubits.bin";
 
-	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size);
-	//Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size, instances);
+	Operators<double> operators(std::atoi(qubits.c_str()));
+	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size, input, operators);
 
 	const int input_layer_size = dataset.feature_length();
 	const int output_layer_size = dataset.target_length();
@@ -131,13 +131,27 @@ int main( int argc, char *argv[] )
 	Activation<double> hidden_activation(hidden_activation_type);
 	Activation<double> target_activation(target_activation_type);
 
+	// #################### CREATE TOPOLOGY ################### // 
 	Topology<double> topology(batch_size);
+
+	// set first layer
+	std::cout << "input layer size: " << input_layer_size << '\n';
 	topology.push_back(input_layer_size, input_activation);
 
-	for (int i = 0; i < num_hidden_layers; ++i) 
-		topology.push_back(hidden_layer_size, hidden_activation);
+	std::istringstream layer_dims(hidden_layer_dimensions);
+
+	int tmp;
+	std::vector<int> v;;
+	while(layer_dims) { layer_dims >> tmp; v.push_back(tmp); }
+
+	// set hidden layers 
+	for (auto i : v) topology.push_back(i, hidden_activation);
 	
+	// set last layer 
+	std::cout << "output layer size: " << output_layer_size << '\n';
 	topology.push_back(output_layer_size, target_activation);
+	
+	// #################### CREATE NETWORKS ################### // 
 
 	srand(static_cast<unsigned int>(seed));
 	Network<double> network(topology);
@@ -145,9 +159,8 @@ int main( int argc, char *argv[] )
 
 	std::vector<Network<double>> networks;
 
-	for (int i = 0; i < dataset.num_eigenvectors(); ++i) networks.push_back(network);
+	for (int i = 0; i < num_eigenvectors; ++i) networks.push_back(network);
 
-	Operators<double> operators(std::atoi(qubits.c_str()));
 	Optimizer<double> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
 
 	Loss<double> loss(loss_type, operators, lagrange_multiplier, trade_off_parameter, random_domain_bound);
@@ -237,8 +250,8 @@ int main( int argc, char *argv[] )
 
 	model.predictive_power(dataset);
 
-	std::cout << std::scientific;
-	std::cout << lagrange_multiplier << '\t' << model.pure_cost(dataset) << '\n';
+	//std::cout << std::scientific;
+	//std::cout << lagrange_multiplier << '\t' << model.pure_cost(dataset) << '\n';
 
 	//if (parser.value_of_key("save_model") == "true") 
 		//model.save(base_output_dir + loss_type + "-model.net");

@@ -17,6 +17,11 @@ Instance<T>::Instance(const Fields<T>& field, const Solver<T>& solver)
 }
 
 template <typename T>
+void Instance<T>::sign_swap()
+{
+}
+
+template <typename T>
 void Instance<T>::append_to_file(std::string fpath) const
 {
 	fields.append_to_file(fpath);	

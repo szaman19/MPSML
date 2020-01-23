@@ -42,7 +42,7 @@ void Parser::capture_input(std::istringstream &streamline)
 	streamline >> key;
 	streamline >> eql;
 
-	if (key == "user_string") 
+	if (key == "hidden_layer_dimensions") 
 		val = quote_delimited_field(streamline);
  	else 
 		streamline >> val;

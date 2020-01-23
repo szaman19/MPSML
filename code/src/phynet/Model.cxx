@@ -21,7 +21,6 @@ template <typename T>
 void Model<T>::predictive_power(const Dataset<T>& dataset)
 {
 	int dim = dataset.num_eigenvectors();
-	T out = 0;
 
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_preds(dim, dim);
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_targs(dim, dim);
@@ -31,19 +30,19 @@ void Model<T>::predictive_power(const Dataset<T>& dataset)
 
 	for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
 	{
-		for (int vec = 0; vec < dataset.num_eigenvectors(); ++vec)
-			networks[vec].feedforward(dataset.testing_feature_batch(batch));
+		for (std::size_t net = 0; net < networks.size(); ++net)
+			networks[net].feedforward(dataset.testing_feature_batch(batch));
 
 		for (int instance = 0; instance < dataset.batch_size; ++instance)
 		{
-			for (int vec = 0; vec < dataset.num_eigenvectors(); ++vec)
+			for (std::size_t net = 0; net < networks.size(); ++net)
 			{
-				normalized_targs.col(vec) = 
-					dataset.testing_target_batch(batch, vec).col(instance);
+				normalized_targs.col(net) = 
+					dataset.testing_target_batch(batch, net).col(instance);
 
-				normalized_preds.col(vec) = 
-					networks[vec].layers.back().states.col(instance) / 
-					networks[vec].layers.back().states.col(instance).norm();
+				normalized_preds.col(net) = 
+					networks[net].layers.back().states.col(instance) / 
+					networks[net].layers.back().states.col(instance).norm();
 			}
 
 			normalized_final += normalized_preds.transpose() * normalized_targs;
@@ -53,13 +52,11 @@ void Model<T>::predictive_power(const Dataset<T>& dataset)
 	normalized_final /= dataset.num_testing_instances();
 
 	std::cout << "\nAverage \n";
-	pretty_print(normalized_final);
+	//pretty_print(normalized_final);
+	std::cout << normalized_final(0,0) << '\n';
 
 	std::cout << "\nDeterminant: " << normalized_final.determinant() << '\n';
 	std::cout << "\nNorm: " << (1.0 / std::sqrt(dim)) * normalized_final.norm() << "\n\n";
-
-	//return out / (dataset.num_testing_instances() * std::sqrt(dim));	
-	//return normalized_final.determinant();	
 }
 
 template <typename T>
@@ -112,7 +109,6 @@ void Model<T>::learn_from(const Dataset<T>& dataset)
 
 	std::shuffle(batch_indices.begin(), batch_indices.end(), engine);
 
-
 	for (auto batch : batch_indices)
 	{
 		#ifdef _OPENMP
@@ -146,21 +142,20 @@ T Model<T>::mse(const Dataset<T>& dataset)
 
 	tmp.setZero();
 
-	for (int vec = 0; vec < dataset.num_eigenvectors(); ++vec)
+	for (std::size_t net = 0; net < networks.size(); ++net)
 	{
 		for (int batch = 0; batch < dataset.num_validation_batches(); ++batch)
 		{
-			//networks[vec].feedforward(dataset.validation_feature_batch(batch));
+			networks[net].feedforward(dataset.validation_feature_batch(batch));
 
-			//tmp += (networks[vec].layers.back().states 
-					//- dataset.validation_target_batch(batch, vec)).array().square();
-			//loss.compute(networks, dataset, batch);
+			tmp += (networks[net].layers.back().states 
+					- dataset.validation_target_batch(batch, net)).array().square();
 
-			tmp += networks[vec].layers.back().errors.array().square();
+			//tmp += networks[net].layers.back().errors.array().square();
 		}
 	}
 	
-	return tmp.mean() / (dataset.num_eigenvectors() * dataset.num_validation_batches());	
+	return tmp.mean() / (networks.size() * dataset.num_validation_batches());	
 }
 
 

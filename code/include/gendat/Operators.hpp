@@ -29,6 +29,8 @@ class Operators
 		Eigen::SparseMatrix<T> energy(const T* ptr_to_instance_of_energy_batch) const;
 		Eigen::SparseMatrix<T> magnetization(void) const;
 
+		int ham_nnz;
+
 	private:
 		int num_qubits;
 		Pauli<T> sigmax, sigmaz, eye2;
