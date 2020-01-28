@@ -9,14 +9,20 @@
 
 #include <gendat/Generator.hpp>
 
-template <typename T>
-Generator<T>::Generator(int num_qubits, int num_transverse, int num_realizations)
+template <typename T> 
+Generator<T>::Generator(std::string model, 
+		int num_qubits, int num_transverse, int num_realizations)
 	: 
 	num_qubits(num_qubits), 
 	num_transverse(num_transverse),
-	num_realizations(num_realizations)
+	num_realizations(num_realizations),
+	model(model)
 {
-	// null body
+	if (model != "ising" && model != "xyz")
+	{
+		std::cerr << "UNSUPPORTED MODEL" << std::endl;
+		exit(-1);
+	}
 }
 template <typename T>
 void Generator<T>::set_dump_location(std::string fpath)
@@ -30,8 +36,22 @@ void Generator<T>::set_dump_location(std::string fpath)
 template <typename T>
 void Generator<T>::run(void) const
 {
-	Eigen::Array<T, Eigen::Dynamic, 1> Bx = 
-		Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(num_transverse, BX_MIN, BX_MAX);
+	Eigen::Array<T, Eigen::Dynamic, 1> Bx;
+
+	if (model == "ising")
+		Bx = Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(num_transverse, BX_MIN, BX_MAX);
+
+	if (model == "xyz")
+	{
+		std::vector<T> x1 {-0.61, -0.65, -0.67, -0.56, -0.43, -0.22, -0.08, 
+			0.12, 0.45, 0.86, 1.14, 1.35, 1.45, 1.52, 1.50};
+
+		std::vector<T> y1 {-0.54, -0.35, -0.16, -0.11,  0.32,  0.55,  0.67, 
+			0.82, 1.07, 1.15, 1.06, 0.85, 0.67, 0.42, 0.23};
+
+
+		Bx = Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(num_transverse, -2, 2);
+	}
 
 	T W;
 
@@ -49,7 +69,12 @@ void Generator<T>::run(void) const
 		for (int iW = 0; iW < num_realizations; ++iW)
 		{
 			fields = Fields<T>(num_qubits, J, Bx[iBx], BZ, W);
-			solver.compute(operators.hamiltonian(fields));
+
+			if (model == "ising")
+				solver.compute(operators.ising_hamiltonian(fields));
+
+			if (model == "xyz")
+				solver.compute(operators.xyz_hamiltonian(fields));
 
 			if (solver.info() != Eigen::Success)
 			{

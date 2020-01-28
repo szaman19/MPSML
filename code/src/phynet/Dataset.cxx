@@ -57,7 +57,7 @@ template <typename T>
 void Dataset<T>::allocate(void)
 {
 	Batch<T> fields(3 * num_qubits, batch_size);
-	Batch<T> hamnze(operators.ham_nnz, batch_size);
+	Batch<T> hamnze(operators.ham_nnz("ising"), batch_size);
 	Batch<T> energy(dim, batch_size);
 	Batch<T> wavefx(dim, batch_size);
 	Waves<T> waves;
@@ -168,6 +168,7 @@ template <typename T>
 void Dataset<T>::fill_hamnze(const std::vector<Batch<T>>& fields_var,
 		std::vector<Batch<T>>& hamnze_var)
 {
+
 	Eigen::SparseMatrix<T> tmp;
 	int c;
 
@@ -175,7 +176,7 @@ void Dataset<T>::fill_hamnze(const std::vector<Batch<T>>& fields_var,
 	{
 		for (int instance = 0; instance < batch_size; ++instance)
 		{
-			tmp = operators.hamiltonian(fields_var[batch].col(instance).data());
+			tmp = operators.ising_hamiltonian(fields_var[batch].col(instance).data());
 
 			c = 0;
 			for (int k = 0; k < tmp.outerSize(); ++k)

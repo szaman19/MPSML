@@ -17,7 +17,7 @@
 #include "Fields.hpp"
 
 #define BX_MIN 0.00
-#define BX_MAX 1.99
+#define BX_MAX 2.00
 #define J 1.0
 #define BZ 0.05
 #define DISORDER_STRENGTH 0.01
@@ -26,7 +26,7 @@ template <typename T>
 class Generator  
 {
 	public:
-		Generator(int num_qubits, int num_transverse, int num_realizations);
+		Generator(std::string model, int num_qubits, int num_transverse, int num_realizations);
 
 		void prompt_if_file(std::string fpath) const;
 		void set_dump_location(std::string fpath);
@@ -35,7 +35,7 @@ class Generator
 	private:
 		bool ready_to_dump = false;
 		int num_qubits, num_transverse, num_realizations;
-		std::string fpath;
+		std::string fpath, model;
 };
 
 

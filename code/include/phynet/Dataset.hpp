@@ -19,7 +19,7 @@
 #include <boost/filesystem.hpp>
 #include <gendat/Operators.hpp>
 
-#define PERCENT_TRAINING 0.01
+#define PERCENT_TRAINING 0.1
 #define PERCENT_VALIDATION 0.1
 #define PERCENT_TESTING 0.90
 #define NUM_HAM_PARAM 3
