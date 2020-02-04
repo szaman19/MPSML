@@ -52,8 +52,8 @@ void Model<T>::predictive_power(const Dataset<T>& dataset)
 	normalized_final /= dataset.num_testing_instances();
 
 	std::cout << "\nAverage \n";
-	pretty_print(normalized_final);
-	//std::cout << normalized_final(0,0) << '\n';
+	//pretty_print(normalized_final);
+	std::cout << normalized_final(0,0) << '\n';
 
 	std::cout << "\nDeterminant: " << normalized_final.determinant() << '\n';
 	std::cout << "\nNorm: " << (1.0 / std::sqrt(dim)) * normalized_final.norm() << "\n\n";

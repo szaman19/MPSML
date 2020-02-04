@@ -19,7 +19,7 @@
 #define BX_MIN 0.00
 #define BX_MAX 2.00
 #define J 1.0
-#define BZ 0.05
+#define BZ 0.01
 #define DISORDER_STRENGTH 0.01
 
 template <typename T>

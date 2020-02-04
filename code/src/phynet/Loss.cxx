@@ -217,6 +217,75 @@ void Loss<T>::unsupervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, 
 }
 
 template <typename T>
+void Loss<T>::rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		for (std::size_t net = 0; net < nets.size(); ++net)
+		{
+			P.col(net) = nets[net].layers.back().states.col(instance) / 
+				nets[net].layers.back().states.col(instance).norm();
+		}
+
+		H = this->operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+
+		S = 4 * H * P + 2 * H * P * P.transpose() * P + 2 * P * P.transpose() * H * P;
+
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += S.col(net);
+	}	
+
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+}
+
+template <typename T>
+void Loss<T>::sigmoid_rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+	
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors = 
+			nets[net].layers.back().states - data.training_target_batch(batch, net);
+	}
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			P.col(net) = nets[net].layers.back().states.col(instance);
+
+		H = this->operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+
+		S = 4 * H * P + 2 * H * P * P.transpose() * P + 2 * P * P.transpose() * H * P;
+
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += S.col(net);
+	}	
+
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+}
+
+template <typename T>
 void Loss<T>::sigmoid_unitarity(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
 	int dim = data.num_eigenvectors(); 
@@ -294,13 +363,9 @@ void Loss<T>::sigmoid_frobenius(NetVec<T>& nets, const Dataset<T>& data, int bat
 			//G.col(net) = data.training_target_batch(batch, net).col(instance);
 		}
 
-		u = std::fabs((P.transpose() * P - I).norm()) / 4;
+		u = (P.transpose() * P - I).norm();
 
-		S = sigmoid(u*u) * (1.0 - sigmoid(u*u)) * (P * P.transpose() * P - P);
-
-		//std::cout << "u: " << u << '\n';
-		//std::cout << S << '\n';
-		//exit(-10);
+		S = sigmoid(0.25*u*u) * (1.0 - sigmoid(0.25*u*u)) * (P * P.transpose() * P - P);
 
 		for (std::size_t net = 0; net < nets.size(); ++net)
 			nets[net].layers.back().errors.col(instance) += S.col(net);
@@ -461,6 +526,14 @@ void Loss<T>::set_compute_pointer(std::string loss)
 	else if (loss == "su")
 	{
 		compute = std::bind(&Loss<T>::sigmoid_unitarity, this, _1, _2, _3);
+	}
+	else if (loss == "srr")
+	{
+		compute = std::bind(&Loss<T>::sigmoid_rayleigh_ritz, this, _1, _2, _3);
+	}
+	else if (loss == "rr")
+	{
+		compute = std::bind(&Loss<T>::rayleigh_ritz, this, _1, _2, _3);
 	}
 	else if (loss == "sf")
 	{
