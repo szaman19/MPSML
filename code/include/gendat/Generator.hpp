@@ -15,6 +15,7 @@
 #include "Instance.hpp"
 #include "Operators.hpp"
 #include "Fields.hpp"
+#include <chrono>
 
 #define BX_MIN 0.00
 #define BX_MAX 2.00

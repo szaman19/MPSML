@@ -38,7 +38,6 @@ Operators<T>::Operators(int num_qubits) : num_qubits(num_qubits)
 		longitudinal_stencils[site].makeCompressed();
 		transverse_stencils[site].makeCompressed();
 	}
-
 }
 
 template <typename T>
@@ -307,7 +306,7 @@ Eigen::SparseMatrix<T> Operators<T>::magnetization(void) const
 	for (std::size_t i = 1; i < longitudinal_stencils.size(); ++i)
 		tmp += longitudinal_stencils[i];
 
-	return tmp;
+	return tmp / num_qubits;
 }
 
 template class Operators<double>;

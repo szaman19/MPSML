@@ -21,7 +21,7 @@
 
 #define PERCENT_TRAINING 0.1
 #define PERCENT_VALIDATION 0.1
-#define PERCENT_TESTING 0.90
+#define PERCENT_TESTING 0.80
 #define NUM_HAM_PARAM 3
 
 template <typename T>
@@ -66,6 +66,9 @@ class Dataset
 		void shuffle(void);
 
 		const int batch_size;
+		int num_qubits, num_instances, dim;
+		std::string fpath, input;
+		Operators<T> operators;
 		
 	private:
 		void allocate(void);
@@ -79,11 +82,8 @@ class Dataset
 				std::vector<Batch<T>>& energy_var, 
 				std::vector<Waves<T>>& wavefx_var);
 
-		int num_qubits, num_instances, dim;
 
-		std::string fpath, input;
 
-		Operators<T> operators;
 
 		std::vector<std::streampos> pos;
 

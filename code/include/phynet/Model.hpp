@@ -15,6 +15,7 @@
 #include <phynet/Loss.hpp>
 #include <phynet/Optimizer.hpp>
 #include <gendat/Operators.hpp>
+#include <chrono>
 
 template <typename T>
 class Model  
@@ -27,7 +28,14 @@ class Model
 
 		T mse(const Dataset<T>& dataset);
 
-		void predictive_power(const Dataset<T>& dataset);
+		void write_overlap(const Dataset<T> &dataset, std::string fpath);
+		void write_magnetization(const Dataset<T> &dataset, std::string fpath);
+
+		void write_radial_visualization(const Dataset<T> &dataset, std::string fpath);
+
+		void print_average_overlap(const Dataset<T>& dataset);
+		void print_average_sz_error(const Dataset<T> &dataset);
+		void print_inference_time(const Dataset<T> &dataset);
 
 		Eigen::RowVectorXd pure_cost(const Dataset<T>& dataset);
 
@@ -37,7 +45,6 @@ class Model
 		//void write_coefficients(const Dataset<T> &dataset, std::string fpath, int epoch);
 		//void write_schrodinger_error(const Dataset<T> &dataset, std::string fpath, int epoch);
 		//void write_lyapunov_estimate(const Dataset<T> &dataset, std::string fpath, int epoch);
-		//void write_average_magnetization(const Dataset<T> &dataset, std::string fpath, int epoch);
 
 	private:
 		std::vector<Network<T>> networks;

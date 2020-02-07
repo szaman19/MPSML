@@ -63,6 +63,10 @@ void Generator<T>::run(void) const
 	Fields<T> fields;
 	Solver<T> solver;
 	Operators<T> operators(num_qubits);
+	std::chrono::time_point<std::chrono::high_resolution_clock> start, stop, origin;
+	std::chrono::duration<double> elapsed;
+	origin = std::chrono::high_resolution_clock::now();
+	elapsed = origin - origin;
 
 	for (int iBx = 0; iBx < Bx.size(); ++iBx)
 	{
@@ -71,7 +75,12 @@ void Generator<T>::run(void) const
 			fields = Fields<T>(num_qubits, J, Bx[iBx], BZ, W);
 
 			if (model == "ising")
+			{
+				start = std::chrono::high_resolution_clock::now();
 				solver.compute(operators.ising_hamiltonian(fields));
+				stop = std::chrono::high_resolution_clock::now();
+				elapsed += stop - start;
+			}
 
 			if (model == "xyz")
 				solver.compute(operators.xyz_hamiltonian(fields));
@@ -85,6 +94,7 @@ void Generator<T>::run(void) const
 			Instance<T>(fields, solver).append_to_file(fpath);
 		}
 	}
+	std::cout << "Diagonalization time: " << elapsed.count() << " seconds\n";
 }
 
 template <typename T>

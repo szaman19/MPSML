@@ -36,9 +36,9 @@ class Operators
 		Eigen::SparseMatrix<T> magnetization(void) const;
 
 		int ham_nnz(std::string model);
+		const int num_qubits;
 
 	private:
-		int num_qubits;
 		Pauli<T> sigmax, sigmaz, eye2;
 		Eigen::Matrix<std::complex<T>, 2, 2> sigmay;
 

@@ -217,7 +217,7 @@ void Loss<T>::unsupervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, 
 }
 
 template <typename T>
-void Loss<T>::rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
+void Loss<T>::shuijun_diannong(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
 	int dim = data.num_eigenvectors(); 
 
@@ -250,7 +250,104 @@ void Loss<T>::rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
 }
 
 template <typename T>
-void Loss<T>::sigmoid_rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
+void Loss<T>::rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+
+	Eigen::RowVectorXd one(dim);
+	Eigen::VectorXd out(dim);
+
+	one.setOnes();
+	 
+	double d, a;
+
+	if (nets.size() != 1)
+	{
+		std::cerr << "Only ground state loss\n";
+		exit(-10);
+	}
+	
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors = 
+			nets[net].layers.back().states - data.training_target_batch(batch, net);
+	}
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		P.col(0) = nets[0].layers.back().states.col(instance);
+
+		H = this->operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+
+		d = P.col(0).cwiseAbs2().sum();
+		a = P.col(0).transpose() * H * P.col(0);
+
+		out = (E.coeff(0,0) - a/d) * (2*(d * H * P.col(0) - a * P.col(0)) / (d*d));
+
+		//std::cout << "RR: " << out.transpose() << '\n';
+		//std::cout << "MS: " << nets[0].layers.back().errors.col(instance).transpose() << '\n';
+
+		nets[0].layers.back().errors.col(instance) += out;
+	}	
+
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+}
+
+template <typename T>
+void Loss<T>::raw_sums(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
+	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+
+	Eigen::RowVectorXd one(dim), out(dim);
+
+	one.setOnes();
+
+	if (nets.size() != 1)
+	{
+		std::cerr << "Only ground state loss\n";
+		exit(-10);
+	}
+	
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors = 
+			nets[net].layers.back().states - data.training_target_batch(batch, net);
+	}
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		P.col(0) = nets[0].layers.back().states.col(instance);
+
+		H = this->operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+
+		out = (E.coeff(0,0) * one * P.col(0) - one * H * P.col(0)) * (E.coeff(0,0) * one - one * H);
+
+		nets[0].layers.back().errors.col(instance) += out.transpose();
+	}	
+
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+}
+
+template <typename T>
+void Loss<T>::data_shuijun_diannong(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
 	int dim = data.num_eigenvectors(); 
 
@@ -527,9 +624,17 @@ void Loss<T>::set_compute_pointer(std::string loss)
 	{
 		compute = std::bind(&Loss<T>::sigmoid_unitarity, this, _1, _2, _3);
 	}
-	else if (loss == "srr")
+	else if (loss == "sd")
 	{
-		compute = std::bind(&Loss<T>::sigmoid_rayleigh_ritz, this, _1, _2, _3);
+		compute = std::bind(&Loss<T>::shuijun_diannong, this, _1, _2, _3);
+	}
+	else if (loss == "dd")
+	{
+		compute = std::bind(&Loss<T>::data_shuijun_diannong, this, _1, _2, _3);
+	}
+	else if (loss == "rs")
+	{
+		compute = std::bind(&Loss<T>::raw_sums, this, _1, _2, _3);
 	}
 	else if (loss == "rr")
 	{

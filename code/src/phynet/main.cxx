@@ -10,6 +10,7 @@
 #include <numeric>
 #include <limits>
 #include <string>
+#include <chrono>
 #include <boost/circular_buffer.hpp>
 #include <phynet/Model.hpp>
 #include <phynet/Parser.hpp>
@@ -31,7 +32,7 @@ int main( int argc, char *argv[] )
 	
 	const int batch_size = 
 		parser.value_of_key("batch_size").empty() ? 
-		100 : std::atoi(parser.value_of_key("batch_size").c_str());
+		10 : std::atoi(parser.value_of_key("batch_size").c_str());
 
 	const std::string cutout_option = 
 		parser.value_of_key("cutout_option").empty() ? 
@@ -39,7 +40,7 @@ int main( int argc, char *argv[] )
 	
 	const int epochs = 
 		parser.value_of_key("epochs").empty() ? 
-		1000 : std::atoi(parser.value_of_key("epochs").c_str());
+		10000 : std::atoi(parser.value_of_key("epochs").c_str());
 	
 	const std::string data_root = 
 		parser.value_of_key("data_root").empty() ? 
@@ -47,7 +48,7 @@ int main( int argc, char *argv[] )
 	
 	const std::string input = 
 		parser.value_of_key("input").empty() ? 
-		"hamnze" : parser.value_of_key("input");
+		"fields" : parser.value_of_key("input");
 
 	const std::string hidden_activation_type = 
 		parser.value_of_key("hidden_activation").empty() ? 
@@ -55,7 +56,7 @@ int main( int argc, char *argv[] )
 	
 	const std::string hidden_layer_dimensions = 
 		parser.value_of_key("hidden_layer_dimensions").empty() ? 
-		" 100 " : parser.value_of_key("hidden_layer_dimensions");
+		" 10 " : parser.value_of_key("hidden_layer_dimensions");
 	
 	const double inactive_threshold = 
 		parser.value_of_key("inactive_threshold").empty() ?
@@ -99,7 +100,7 @@ int main( int argc, char *argv[] )
 
 	const int seed = 
 		parser.value_of_key("seed").empty() ?
-		0 : std::atoi(parser.value_of_key("seed").c_str());
+		rand() : std::atoi(parser.value_of_key("seed").c_str());
 	
 	const std::string target_activation_type = 
 		parser.value_of_key("target_activation").empty() ? 
@@ -107,7 +108,7 @@ int main( int argc, char *argv[] )
 	
 	const double validation_threshold = 
 		parser.value_of_key("validation_threshold").empty() ?
-		5e-3 : std::atof(parser.value_of_key("validation_threshold").c_str());
+		1e-4 : std::atof(parser.value_of_key("validation_threshold").c_str());
 
 	// required inputs
 	const std::string chain = parser.value_of_key("chain") + "/";
@@ -152,21 +153,19 @@ int main( int argc, char *argv[] )
 	topology.push_back(output_layer_size, target_activation);
 	
 	// #################### CREATE NETWORKS ################### // 
-
 	srand(static_cast<unsigned int>(seed));
 	Network<double> network(topology);
 	network.validate_topology(dataset);
 
 	std::vector<Network<double>> networks;
-
 	for (int i = 0; i < num_eigenvectors; ++i) networks.push_back(network);
 
 	Optimizer<double> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
-
 	Loss<double> loss(loss_type, operators, lagrange_multiplier, trade_off_parameter, random_domain_bound);
 	Model<double> model(networks, loss, optimizer);
 
-	//std::ofstream mse_stream(base_output_dir + "mse-" + loss_type + ".dat", std::ofstream::trunc);
+
+	// mse tracking
 	boost::circular_buffer<double> mse_history(memory_window);
 
 	for (int i = 0; i < memory_window; ++i)
@@ -175,10 +174,12 @@ int main( int argc, char *argv[] )
 	double cutout_value, inactive_value;
 	std::vector<double> activities(memory_window);
 
-	//std::cout << std::scientific;
-	
-	//mse_stream << "#Epoch   Training      Testing      Validation\n";
-	//mse_stream << std::scientific;
+
+	// #################### MAIN TRAINING LOOP ################### // 
+	std::chrono::time_point<std::chrono::high_resolution_clock> start, stop, origin;
+	std::chrono::duration<double> elapsed;
+	origin = std::chrono::high_resolution_clock::now();
+	elapsed = origin - origin;
 
 	for (int epoch = 0; epoch <= epochs; ++epoch)
 	{
@@ -209,53 +210,31 @@ int main( int argc, char *argv[] )
 			std::cout << "\nMAJOR ISSUE! MODEL STAGNATED\n" << std::endl;
 			close_ascii_escape();
 			break;
-
 		}
 		else
 		{
-			//std::cout << epoch << '\t' << training_mse << '\t'
-				//<< testing_mse << '\t' << mse_history.back() << std::endl;
-			
-			//mse_stream<< epoch << '\t' << training_mse << '\t'
-				//<< testing_mse << '\t' << mse_history.back() << std::endl;
-
-		
-			//if (parser.value_of_key("write_average_magnetization") == "true")
-				//model.write_average_magnetization(testing_data, 
-						//base_output_dir + "testing/avg-" + loss_type, epoch);
-
-			//if (parser.value_of_key("write_coefficients") == "true")
-				//model.write_coefficients(testing_data, 
-						//base_output_dir + "testing/coe-" + loss_type, epoch);
-
-			//if (parser.value_of_key("write_lyapunov_estimate") == "true") 
-				//model.write_lyapunov_estimate(testing_data, 
-						//base_output_dir + "testing/lya-" + loss_type, epoch);
-
-			//if (parser.value_of_key("write_schrodinger_error") == "true")
-				//model.write_schrodinger_error(testing_data, 
-						//base_output_dir + "testing/sch-" + loss_type, epoch);
-						
-			//std::cout << "#Epoch      MSE  \n";
-			
 			std::cout << epoch << '\t' << mse_history.back() << std::endl;
-
+			start = std::chrono::high_resolution_clock::now();
 			model.learn_from(dataset);
-
-			//if (parser.value_of_key("shuffle") == "true")
-				//training_data.shuffle();
+			stop = std::chrono::high_resolution_clock::now();
+			elapsed += stop - start;
 		}
 
+		if (epoch == epochs) 
+			std::cout << "Exhausted allowed epochs" << std::endl;
 	}
+	std::cout << "Training time: " << elapsed.count() << " seconds\n";
 
-	model.predictive_power(dataset);
+	model.print_inference_time(dataset); 
+	model.print_average_overlap(dataset);
+	model.print_average_sz_error(dataset);
 
-	//std::cout << std::scientific;
-	//std::cout << lagrange_multiplier << '\t' << model.pure_cost(dataset) << '\n';
-
-	//if (parser.value_of_key("save_model") == "true") 
-		//model.save(base_output_dir + loss_type + "-model.net");
-
+	if (dataset.num_eigenvectors() == 1)
+	{
+		model.write_magnetization(dataset, "mag.dat");
+		model.write_overlap(dataset, "ovr.dat");
+		model.write_radial_visualization(dataset, "rad.dat");
+	}
 
 	return 0;
 }

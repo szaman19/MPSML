@@ -17,46 +17,109 @@ Model(const std::vector<Network<T>>& networks, const Loss<T>& loss, const Optimi
  	// Null constructor body 
 }
 
+
 template <typename T>
-void Model<T>::predictive_power(const Dataset<T>& dataset)
+void Model<T>::write_radial_visualization(const Dataset<T> &dataset, std::string fpath)
 {
-	int dim = dataset.num_eigenvectors();
+	std::ofstream file(fpath);
 
-	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_preds(dim, dim);
-	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_targs(dim, dim);
-	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_final(dim, dim);
-
-	normalized_final.setZero();
-
-	for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+	if (file.is_open())
 	{
-		for (std::size_t net = 0; net < networks.size(); ++net)
-			networks[net].feedforward(dataset.testing_feature_batch(batch));
+		file << std::scientific;
 
-		for (int instance = 0; instance < dataset.batch_size; ++instance)
+		int row = 0;
+		int dim = dataset.num_eigenvectors();
+		double c = 2 * 3.14159 / dim;
+		double radius = 1;
+
+		auto anchor = [c](int j, double r) -> Eigen::RowVector2d
 		{
-			for (std::size_t net = 0; net < networks.size(); ++net)
+			return Eigen::RowVector2d(r*cos((j-0)*c), r*sin((j-0)*c));
+		};
+
+		std::ofstream ank_file("anchors.dat");
+		ank_file << std::scientific;
+		for (int j = 0; j < dim; ++j) ank_file << anchor(j, radius) << '\n';
+
+		Eigen::RowVector2d out_true = Eigen::Vector2d::Zero();
+		Eigen::RowVector2d out_pred = Eigen::Vector2d::Zero();
+		Eigen::Matrix<T, Eigen::Dynamic, 1> psi, tar;
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> x(dataset.num_testing_instances(), dim);
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> w(dataset.num_testing_instances(), dim);
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> y(dataset.num_testing_instances(), dim);
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> z(dataset.num_testing_instances(), dim);
+
+		for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+		{
+			for (std::size_t net = 0; net < this->networks.size(); ++net)
+				this->networks[net].feedforward(dataset.testing_feature_batch(batch));
+
+			for (int instance = 0; instance < dataset.batch_size; ++instance)
 			{
-				normalized_targs.col(net) = 
-					dataset.testing_target_batch(batch, net).col(instance);
-
-				normalized_preds.col(net) = 
-					networks[net].layers.back().states.col(instance) / 
-					networks[net].layers.back().states.col(instance).norm();
+				for (std::size_t net = 0; net < this->networks.size(); ++net)
+				{
+					psi = this->networks[net].layers.back().states.col(instance);
+					y.row(row) = psi/psi.norm();
+					x.row(row++) = dataset.testing_target_batch(batch, 0).col(instance);
+				}
 			}
-
-			normalized_final += normalized_preds.transpose() * normalized_targs;
 		}
+
+		double max, min;
+
+		max = w.maxCoeff();
+		min = w.minCoeff();
+
+		for (int i = 0; i < w.cols(); ++i)
+		{
+			for (int j = 0; j < w.rows(); ++j)
+			{
+				w(j,i) = ( w(j,i) - min ) / (max - min);
+			}
+		}
+
+		max = y.maxCoeff();
+		min = y.minCoeff();
+
+		for (int i = 0; i < w.cols(); ++i)
+		{
+			for (int j = 0; j < w.rows(); ++j)
+			{
+				y(j,i) = ( y(j,i) - min ) / (max - min);
+			}
+		}
+
+		for (int i = 0; i < w.rows(); ++i)
+		{
+			for (int j = 0; j < w.cols(); ++j)
+			{
+				w(i,j) = x(i,j) / x.row(i).sum();
+				z(i,j) = y(i,j) / y.row(i).sum();
+			}
+		}
+
+		for (int i = 0; i < x.rows(); ++i)
+		{
+			for (int j = 0; j < x.cols(); ++j)
+			{
+				out_true += w(i, j) * anchor(j, radius);
+				out_pred += z(i, j) * anchor(j, radius);
+			}	
+
+			file << out_true << '\t' << out_pred << '\n';
+			out_true.setZero();
+			out_pred.setZero();
+		}
+		
+		//std::cout << "wrote radviz to " << fpath << '\n';
+
+	}
+	else
+	{
+		std::cerr << "Failed to open " << fpath << " for write" << std::endl;
+		exit(-1);
 	}
 
-	normalized_final /= dataset.num_testing_instances();
-
-	std::cout << "\nAverage \n";
-	//pretty_print(normalized_final);
-	std::cout << normalized_final(0,0) << '\n';
-
-	std::cout << "\nDeterminant: " << normalized_final.determinant() << '\n';
-	std::cout << "\nNorm: " << (1.0 / std::sqrt(dim)) * normalized_final.norm() << "\n\n";
 }
 
 template <typename T>
@@ -133,7 +196,6 @@ void Model<T>::learn_from(const Dataset<T>& dataset)
 	}
 }
 
-
 template <typename T>
 T Model<T>::mse(const Dataset<T>& dataset)
 {
@@ -150,19 +212,191 @@ T Model<T>::mse(const Dataset<T>& dataset)
 
 			tmp += (networks[net].layers.back().states 
 					- dataset.validation_target_batch(batch, net)).array().square();
-
-			//tmp += networks[net].layers.back().errors.array().square();
 		}
 	}
 	
 	return tmp.mean() / (networks.size() * dataset.num_validation_batches());	
 }
 
+template <typename T>
+void Model<T>::print_inference_time(const Dataset<T> &dataset)
+{
+	std::chrono::time_point<std::chrono::high_resolution_clock> start, stop;
+	start = std::chrono::high_resolution_clock::now();
 
+	for (std::size_t net = 0; net < networks.size(); ++net)
+		for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+			networks[net].feedforward(dataset.testing_feature_batch(batch));
 
+	stop = std::chrono::high_resolution_clock::now();
 
+	std::chrono::duration<double> elapsed = stop - start;
+	std::cout << "Inference time: " << elapsed.count() << " seconds" << std::endl;
+}
 
+template <typename T>
+void Model<T>::print_average_sz_error(const Dataset<T> &dataset)
+{
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Sz = dataset.operators.magnetization();
+	Eigen::Matrix<T, Eigen::Dynamic, 1> psi, tar;
 
+	double out = 0;
+	double t1, t2;
+
+	for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+	{
+		for (std::size_t net = 0; net < this->networks.size(); ++net)
+			this->networks[net].feedforward(dataset.testing_feature_batch(batch));
+
+		for (int instance = 0; instance < dataset.batch_size; ++instance)
+		{
+			for (std::size_t net = 0; net < this->networks.size(); ++net)
+			{
+				psi = this->networks[net].layers.back().states.col(instance);
+				psi /= psi.norm();
+				tar = dataset.testing_target_batch(batch, net).col(instance);
+				t1 = psi.transpose() * Sz * psi;
+				t2 = tar.transpose() * Sz * tar;
+				out += std::fabs(t2 - t1);
+			}
+		}
+	}
+
+	std::cout << "Average Sz error: " 
+		<< out / (dataset.batch_size * dataset.num_testing_batches() * networks.size())
+		<< std::endl;
+}
+
+template <typename T>
+void Model<T>::write_magnetization(const Dataset<T> &dataset, std::string fpath)
+{
+	std::ofstream file(fpath);
+
+	if (file.is_open())
+	{
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Sz = dataset.operators.magnetization();
+		Eigen::Matrix<T, Eigen::Dynamic, 1> psi, tar;
+		int n = dataset.operators.num_qubits;
+		file << std::scientific;
+
+		for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+		{
+			for (std::size_t net = 0; net < this->networks.size(); ++net)
+				this->networks[net].feedforward(dataset.testing_feature_batch(batch));
+
+			for (int instance = 0; instance < dataset.batch_size; ++instance)
+			{
+				file << dataset.testing_feature_batch(batch).col(instance)(n) << '\t';
+				for (std::size_t net = 0; net < this->networks.size(); ++net)
+				{
+					psi = this->networks[net].layers.back().states.col(instance);
+					tar = dataset.testing_target_batch(batch, net).col(instance);
+					psi /= psi.norm();
+					file << tar.transpose() * Sz * tar << '\t';
+					file << psi.transpose() * Sz * psi << '\t';
+				}
+				file << '\n';	
+			}
+		}
+
+		//std::cout << "wrote magnetization to " << fpath << '\n';
+	}
+	else
+	{
+		std::cerr << "Could not open " << fpath << " for writing\n";
+		exit(-1);
+	}
+}
+
+template <typename T>
+void Model<T>::print_average_overlap(const Dataset<T>& dataset)
+{
+	int dim = dataset.num_eigenvectors();
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_preds(dim, dim);
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_targs(dim, dim);
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> normalized_final(dim, dim);
+
+	normalized_final.setZero();
+
+	for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+	{
+		for (std::size_t net = 0; net < networks.size(); ++net)
+			networks[net].feedforward(dataset.testing_feature_batch(batch));
+
+		for (int instance = 0; instance < dataset.batch_size; ++instance)
+		{
+			for (std::size_t net = 0; net < networks.size(); ++net)
+			{
+				normalized_targs.col(net) = 
+					dataset.testing_target_batch(batch, net).col(instance);
+
+				normalized_preds.col(net) = 
+					networks[net].layers.back().states.col(instance) / 
+					networks[net].layers.back().states.col(instance).norm();
+			}
+
+			normalized_final += normalized_preds.transpose() * normalized_targs;
+		}
+	}
+
+	normalized_final /= dataset.num_testing_instances();
+
+	if (networks.size() == 1)
+	{
+		std::cout << "Average overlap: ";
+		std::cout << normalized_final(0,0) << '\n';
+	}
+	else if ((int)networks.size() == dim && dim <= 16)
+	{
+		std::cout << "\nAverage overlap: \n";
+		pretty_print(normalized_final);
+	}
+	else
+	{
+		std::cout << "Mean: " << normalized_final.mean() << '\n';
+		std::cout << "Determinant: " << normalized_final.determinant() << '\n';
+		std::cout << "Norm: " << (1.0 / std::sqrt(dim)) * normalized_final.norm() << "\n\n";
+	}
+}
+
+template <typename T>
+void Model<T>::write_overlap(const Dataset<T>& dataset, std::string fpath)
+{
+	std::ofstream file(fpath);
+
+	if (file.is_open())
+	{
+		int n = dataset.operators.num_qubits;
+		Eigen::Matrix<T, Eigen::Dynamic, 1> psi, tar;
+		file << std::scientific;
+
+		for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+		{
+			for (std::size_t net = 0; net < networks.size(); ++net)
+				networks[net].feedforward(dataset.testing_feature_batch(batch));
+
+			for (int instance = 0; instance < dataset.batch_size; ++instance)
+			{
+				file << dataset.testing_feature_batch(batch).col(instance)(n) << '\t';
+				for (std::size_t net = 0; net < this->networks.size(); ++net)
+				{
+					psi = this->networks[net].layers.back().states.col(instance);
+					tar = dataset.testing_target_batch(batch, net).col(instance);
+					psi /= psi.norm();
+					file << psi.transpose() * tar << '\t';
+				}
+				file << '\n';	
+			}
+		}
+		//std::cout << "wrote overlaps to " << fpath << '\n';
+	}
+	else
+	{
+		std::cerr << "Could not open " << fpath << " for writing\n";
+		exit(-10);
+	}
+}
 
 //template <typename T>
 //void Model<T>::write_lyapunov_estimate(const Dataset<T> &dataset, std::string filename, int epoch)
