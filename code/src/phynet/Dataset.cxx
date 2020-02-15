@@ -11,13 +11,14 @@
 
 template <typename T>
 Dataset<T>::Dataset(int num_qubits, std::string fpath, int batch_size, 
-		std::string input, const Operators<T>& operators)
+		std::string input, const Operators<T>& operators, std::string phase)
 	: 
 	batch_size(batch_size), 
 	num_qubits(num_qubits), 
 	fpath(fpath), 
 	input(input), 
-	operators(operators)
+	operators(operators),
+	phase(phase)
 { 
 	this->dim = (int)(pow(2, num_qubits) + 0.5);
 	long offset = (3*num_qubits + dim + dim*dim)*sizeof(T);
@@ -135,7 +136,7 @@ void Dataset<T>::import(void)
 
 	std::random_device rd;	
 	std::default_random_engine engine(rd());
-	std::shuffle(pos.begin(), pos.end(), engine);
+	if (phase != "single") std::shuffle(pos.begin(), pos.end(), engine);
 
 	int lower_training_index = 0;		
 	int lower_validation_index = (int)(num_instances * PERCENT_TRAINING);

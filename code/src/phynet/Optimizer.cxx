@@ -10,22 +10,17 @@
 #include <phynet/Optimizer.hpp>
 
 template <typename T>
-Optimizer<T>::Optimizer(std::string optimizer_type, 
-		T learning_rate, 
-		T decay_rate, 
-		T epsilon_conditioner)
-	: 
-		m_learning_rate(learning_rate), 
-		m_decay_rate(decay_rate), 
-		m_epsilon_conditioner(epsilon_conditioner)
+Optimizer<T>::Optimizer(std::string optimizer_type, std::string learning_schedule_type)
 {
 	set_update_pointer(optimizer_type);
+	set_learning_schedule_pointer(learning_schedule_type);
 }
 
 template <typename T>
 void Optimizer<T>::stochastic_gradient_descent(Network<T>& net)
 {
-	T step_size = m_learning_rate / net.layers[0].states.cols();
+	T step_size = learning_rate() / net.layers[0].states.cols();
+	//std::cout << learning_rate() << '\n';
 
 	for (std::size_t l = net.layers.size() - 1; l >= 1; --l)
 	{
@@ -149,6 +144,90 @@ void Optimizer<T>::set_update_pointer(std::string optimizer_type)
 }
 
 template <typename T>
+double Optimizer<T>::constant_schedule(void)
+{
+	return m_learning_rate_min;
+}
+
+template <typename T>
+double Optimizer<T>::cosine_schedule(void)
+{
+	double d = m_learning_rate_max - m_learning_rate_min;
+	double a = 1.0 - cos(m_epoch * 3.14159 / m_epochs_per_cycle);
+
+	//std::cout 
+		//<< "max: " << m_learning_rate_max << '\t'
+		//<< "min: " << m_learning_rate_min << '\t'
+		//<< "a:   " << a << '\t'
+		//<< "e:   " << m_epoch << '\t'
+		//<< "pc:  " << m_epochs_per_cycle << '\n';
+
+	return m_learning_rate_min + 0.5 * d * a;
+}
+
+template <typename T>
+double Optimizer<T>::cosine_annealed_schedule(void)
+{
+	double d = m_learning_rate_max - m_learning_rate_min;
+	double a = 1.0 - cos(m_epoch * 3.14159 / m_epochs_per_cycle);
+	double e = std::exp((-2.0*m_epoch)/m_epochs);
+
+	return e * (m_learning_rate_min + 0.5 * d * a);
+}
+
+template <typename T>
+double Optimizer<T>::sawtooth_schedule(void)
+{
+	double d = m_learning_rate_max - m_learning_rate_min;
+	double a = 1.0 - cos(m_epoch * 3.14159 / m_epochs_per_cycle);
+
+	return m_learning_rate_min + 0.5 * d * a;
+}
+
+template <typename T>
+double Optimizer<T>::sawtooth_annealed_schedule(void)
+{
+	double d = m_learning_rate_max - m_learning_rate_min;
+	double a = 1.0 - cos(m_epoch * 3.14159 / m_epochs_per_cycle);
+
+	return m_learning_rate_min + 0.5 * d * a;
+}
+
+template <typename T>
+void Optimizer<T>::set_learning_schedule_pointer(std::string schedule_type)
+{
+	using namespace std::placeholders;
+
+	if (schedule_type == "constant")
+	{
+		learning_rate = std::bind(&Optimizer<T>::constant_schedule, this);
+	}
+	else if (schedule_type == "cosine")
+	{
+		learning_rate = std::bind(&Optimizer<T>::cosine_schedule, this);
+	}
+	else if (schedule_type == "sawtooth")
+	{
+		learning_rate = std::bind(&Optimizer<T>::sawtooth_schedule, this);
+	}
+	else if (schedule_type == "cosine_annealed")
+	{
+		learning_rate = std::bind(&Optimizer<T>::cosine_annealed_schedule, this);
+	}
+	else if (schedule_type == "sawtooth_annealed")
+	{
+		learning_rate = std::bind(&Optimizer<T>::sawtooth_annealed_schedule, this);
+	}
+	else
+	{
+		open_ascii_escape("red");
+		std::cerr << "ERROR!: UNSUPPORTED LEARNING SCHEDULE\n" << std::endl;
+		close_ascii_escape();
+		exit(-1);
+	}
+}
+
+template <typename T>
 void Optimizer<T>::initialize_accumulation_buffers(const Network<T>& net)
 {
 	m_updates = net;
@@ -181,6 +260,46 @@ void Optimizer<T>::initialize_accumulation_buffers(const Network<T>& net)
 	}
 }
 
+template <typename T>
+void Optimizer<T>::set_epochs(int epochs)
+{
+	m_epochs = epochs;
+}
 
+template <typename T>
+void Optimizer<T>::set_learning_rate_min(double value)
+{
+	m_learning_rate_min = value;
+}
+
+template <typename T>
+void Optimizer<T>::set_learning_rate_max(double value)
+{
+	m_learning_rate_max = value;
+}
+
+template <typename T>
+void Optimizer<T>::set_decay_rate(double value)
+{
+	m_decay_rate = value;
+}
+
+template <typename T>
+void Optimizer<T>::set_epsilon_conditioner(double value)
+{
+	m_epsilon_conditioner = value;
+}
+
+template <typename T>
+void Optimizer<T>::set_epoch(int epoch)
+{
+	m_epoch = epoch;
+}
+
+template <typename T> 
+void Optimizer<T>::set_epochs_per_cycle(int epochs_per_cycle)
+{
+	m_epochs_per_cycle = epochs_per_cycle;
+}
 
 template class Optimizer<double>;

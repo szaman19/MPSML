@@ -27,9 +27,10 @@ class Network
 
 		void validate_topology(const Dataset<T>& dataset) const;
 		void set_zero(void);
+
+		Eigen::Matrix<T, 1, Eigen::Dynamic> flat_wandb(void) const;
 				
-		void 
-		feedforward(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& inputs);
+		void feedforward(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& inputs);
 
 		void backpropagate(void);
 

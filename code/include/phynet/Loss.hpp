@@ -60,9 +60,11 @@ class Loss
 		void physics_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void randomly_perturbed_quadratic(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void sigmoid_rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void shuijun_diannong(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void data_shuijun_diannong(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void raw_sums(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void sigmoid_semi_supervised(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void sigmoid_unitarity(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void sigmoid_frobenius(NetVec<T>& nets, const Dataset<T>& data, int batch);
 };

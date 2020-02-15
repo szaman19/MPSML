@@ -23,8 +23,7 @@ class Layer
 		void compute_states(void);
 		void set_zero(void);
 
-		void 
-		reserve(int neurons_in_this_layer, int neurons_in_prev_layer, int batch_size);
+		void reserve(int neurons_in_this_layer, int neurons_in_prev_layer, int batch_size);
 			
 		long neurons_in_layer(void) const;
 

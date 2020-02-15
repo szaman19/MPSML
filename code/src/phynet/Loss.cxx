@@ -148,6 +148,62 @@ void Loss<T>::quadratic_plus_schrodinger(NetVec<T>& nets, const Dataset<T>& data
 }
 
 template <typename T>
+void Loss<T>::sigmoid_semi_supervised(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, 1), S(dim, 1);
+	Eigen::SparseMatrix<T> H(dim, dim);
+
+	double E, L, u;
+
+	L = lagrange_matrix.coeff(0,0);
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		// if Bx < 0.5, add MSE loss
+		if (data.training_feature_batch(batch).col(instance)(data.num_qubits) <= 0.5)
+		{
+			for (std::size_t net = 0; net < nets.size(); ++net)
+			{
+				nets[net].layers.back().errors.col(instance) = 
+					nets[net].layers.back().states.col(instance) - 
+					data.training_target_batch(batch, net).col(instance);
+			}
+		}
+
+		// 2. 
+		for (std::size_t net = 0; net < nets.size(); ++net)
+		{
+			P.col(net) = nets[net].layers.back().states.col(instance) / 
+				nets[net].layers.back().states.col(instance).norm();
+		}
+
+		// 3. 
+		H = this->operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		// 4. 
+		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data()).coeff(0,0);	
+
+		u = (H * P - E * P).norm();
+
+		// 5. Schrodinger loss
+		S = L * sigmoid(0.5*u*u) * (1.0 - sigmoid(0.5*u*u)) * (H * H * P + E * E * P - 2 * E * H * P);
+
+		// 6. 
+		for (std::size_t net = 0; net < nets.size(); ++net)
+			nets[net].layers.back().errors.col(instance) += S.col(net);
+	}	
+
+	// 7.
+	for (std::size_t net = 0; net < nets.size(); ++net)
+	{
+		nets[net].layers.back().errors.array() *= 
+			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+	}
+}
+
+template <typename T>
 void Loss<T>::supervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
 	int dim = data.num_eigenvectors(); 
@@ -170,7 +226,6 @@ void Loss<T>::supervised_schrodinger(NetVec<T>& nets, const Dataset<T>& data, in
 		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
 	
 		S = (H * H) * (P - G) * L;
-		//S = H * H * P * L - H * G * E * L;
 
 		for (std::size_t net = 0; net < nets.size(); ++net)
 			nets[net].layers.back().errors.col(instance) += S.col(net);
@@ -254,15 +309,11 @@ void Loss<T>::rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
 	int dim = data.num_eigenvectors(); 
 
-	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> P(dim, dim), S(dim, dim);
-	Eigen::SparseMatrix<T> H(dim, dim), E(dim, dim), L(lagrange_matrix);
+	Eigen::SparseMatrix<T> H(dim, dim);
 
-	Eigen::RowVectorXd one(dim);
-	Eigen::VectorXd out(dim);
+	Eigen::VectorXd P(dim), S(dim);
 
-	one.setOnes();
-	 
-	double d, a;
+	double d, a, l = lagrange_matrix.coeff(0,0);
 
 	if (nets.size() != 1)
 	{
@@ -270,36 +321,71 @@ void Loss<T>::rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
 		exit(-10);
 	}
 	
-	for (std::size_t net = 0; net < nets.size(); ++net)
-	{
-		nets[net].layers.back().errors = 
-			nets[net].layers.back().states - data.training_target_batch(batch, net);
-	}
+	nets[0].layers.back().errors = 
+		nets[0].layers.back().states - data.training_target_batch(batch, 0);
 
 	for (int instance = 0; instance < data.batch_size; ++instance)
 	{
 		P.col(0) = nets[0].layers.back().states.col(instance);
 
-		H = this->operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+		H = operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
 
-		E = this->operators.energy(data.training_energy_batch(batch).col(instance).data());	
+		d = P.cwiseAbs2().sum();
+		a = P.transpose() * H * P;
 
-		d = P.col(0).cwiseAbs2().sum();
-		a = P.col(0).transpose() * H * P.col(0);
+		S = 2 * (H * P * d - a * P) / (d*d);
 
-		out = (E.coeff(0,0) - a/d) * (2*(d * H * P.col(0) - a * P.col(0)) / (d*d));
-
-		//std::cout << "RR: " << out.transpose() << '\n';
-		//std::cout << "MS: " << nets[0].layers.back().errors.col(instance).transpose() << '\n';
-
-		nets[0].layers.back().errors.col(instance) += out;
+		nets[0].layers.back().errors.col(instance) += l * S;
 	}	
 
-	for (std::size_t net = 0; net < nets.size(); ++net)
+	nets[0].layers.back().errors.array() *= 
+		nets[0].layers.back().derivative_of_activation_on_weighted_sum();
+}
+
+template <typename T>
+void Loss<T>::sigmoid_rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::SparseMatrix<T> H(dim, dim);
+
+	Eigen::VectorXd P(dim), S(dim);
+
+	double d, a, l = lagrange_matrix.coeff(0,0);
+
+	if (nets.size() != 1)
 	{
-		nets[net].layers.back().errors.array() *= 
-			nets[net].layers.back().derivative_of_activation_on_weighted_sum();
+		std::cerr << "Only ground state loss\n";
+		exit(-10);
 	}
+	
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		// if Bx < 0.5, add MSE loss
+		if (data.training_feature_batch(batch).col(instance)(data.num_qubits) <= 0.5)
+		{
+			for (std::size_t net = 0; net < nets.size(); ++net)
+			{
+				nets[net].layers.back().errors.col(instance) = 
+					nets[net].layers.back().states.col(instance) - 
+					data.training_target_batch(batch, net).col(instance);
+			}
+		}
+
+		P.col(0) = nets[0].layers.back().states.col(instance);
+
+		H = operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		d = P.cwiseAbs2().sum();
+		a = P.transpose() * H * P;
+
+		S = sigmoid(a/d) * (1 - sigmoid(a/d)) * 2 * (H * P * d - a * P) / (d*d);
+
+		nets[0].layers.back().errors.col(instance) += l * S;
+	}	
+
+	nets[0].layers.back().errors.array() *= 
+		nets[0].layers.back().derivative_of_activation_on_weighted_sum();
 }
 
 template <typename T>
@@ -640,9 +726,17 @@ void Loss<T>::set_compute_pointer(std::string loss)
 	{
 		compute = std::bind(&Loss<T>::rayleigh_ritz, this, _1, _2, _3);
 	}
+	else if (loss == "srr")
+	{
+		compute = std::bind(&Loss<T>::rayleigh_ritz, this, _1, _2, _3);
+	}
 	else if (loss == "sf")
 	{
 		compute = std::bind(&Loss<T>::sigmoid_frobenius, this, _1, _2, _3);
+	}
+	else if (loss == "se")
+	{
+		compute = std::bind(&Loss<T>::sigmoid_semi_supervised, this, _1, _2, _3);
 	}
 	else
 	{

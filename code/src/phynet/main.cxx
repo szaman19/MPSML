@@ -12,13 +12,16 @@
 #include <string>
 #include <chrono>
 #include <boost/circular_buffer.hpp>
+#include <boost/progress.hpp>
 #include <phynet/Model.hpp>
 #include <phynet/Parser.hpp>
 #include <phynet/Dataset.hpp>
 #include <gendat/Operators.hpp>
+#include <phynet/Optimizer.hpp>
 
 int main( int argc, char *argv[] )
 {
+	std::cout << std::endl;
 	std::string param_file;
 
 	if (argc == 2) param_file = argv[1];
@@ -26,6 +29,13 @@ int main( int argc, char *argv[] )
 
 	Parser parser(param_file);
 	
+	// #################### GATHER USER INPUTS ################### // 
+	// required
+	const std::string chain = parser.value_of_key("chain") + "/";
+	const std::string phase = parser.value_of_key("phase");
+	const std::string qubits = parser.value_of_key("qubits");
+
+	// defaults provided
 	const std::string loss_type = 
 		parser.value_of_key("loss_type").empty() ? 
 		"bb" : parser.value_of_key("loss_type");
@@ -84,7 +94,7 @@ int main( int argc, char *argv[] )
 
 	const double learning_rate = 
 		parser.value_of_key("learning_rate").empty() ?
-		0.1 : std::atof(parser.value_of_key("learning_rate").c_str());
+		0.01 : std::atof(parser.value_of_key("learning_rate").c_str());
 	
 	const std::string optimizer_type = 
 		parser.value_of_key("optimizer").empty() ? 
@@ -106,15 +116,27 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("target_activation").empty() ? 
 		"tanh" : parser.value_of_key("target_activation");
 	
+	const std::string post_process = 
+		parser.value_of_key("post_process").empty() ? 
+		"false" : parser.value_of_key("post_process");
+
 	const double validation_threshold = 
 		parser.value_of_key("validation_threshold").empty() ?
 		1e-4 : std::atof(parser.value_of_key("validation_threshold").c_str());
 
-	// required inputs
-	const std::string chain = parser.value_of_key("chain") + "/";
-	const std::string qubits = parser.value_of_key("qubits");
+	const double epochs_per_cycle = 
+		parser.value_of_key("validation_threshold").empty() ?
+		epochs/10 : std::atof(parser.value_of_key("validation_threshold").c_str());
 
-	// derived inputs
+	const std::string verbose = 
+		parser.value_of_key("verbose").empty() ? 
+		"false" : parser.value_of_key("verbose").c_str();
+	
+	const std::string learning_rate_schedule = 
+		parser.value_of_key("learning_rate_schedule").empty() ? 
+		"constant" : parser.value_of_key("learning_rate_schedule").c_str();
+
+	// #################### CREATE DATASET ################### // 
 	const std::string input_root = data_root + "/input/";
 	const std::string output_root = data_root + "/output/";
 	const std::string base_input_dir = input_root + chain;
@@ -123,7 +145,11 @@ int main( int argc, char *argv[] )
 	const std::string data_path = base_input_dir + qubits + "-qubits.bin";
 
 	Operators<double> operators(std::atoi(qubits.c_str()));
-	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, batch_size, input, operators);
+	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, 
+			batch_size, input, operators, phase);
+
+	//for (int batch = 0; batch < dataset.num_training_batches(); ++batch)
+		//std::cout << dataset.training_feature_batch(batch) << '\n';
 
 	const int input_layer_size = dataset.feature_length();
 	const int output_layer_size = dataset.target_length();
@@ -136,23 +162,28 @@ int main( int argc, char *argv[] )
 	Topology<double> topology(batch_size);
 
 	// set first layer
-	std::cout << "input layer size: " << input_layer_size << '\n';
 	topology.push_back(input_layer_size, input_activation);
 
 	std::istringstream layer_dims(hidden_layer_dimensions);
 
 	int tmp;
-	std::vector<int> v;;
-	while(layer_dims) { layer_dims >> tmp; v.push_back(tmp); }
+	std::vector<int> v;
+	while(layer_dims >> tmp) v.push_back(tmp);
 
 	// set hidden layers 
 	for (auto i : v) topology.push_back(i, hidden_activation);
 	
 	// set last layer 
-	std::cout << "output layer size: " << output_layer_size << '\n';
 	topology.push_back(output_layer_size, target_activation);
 	
-	// #################### CREATE NETWORKS ################### // 
+	std::cout << "Layers: " << v.size() + 2 << '\n';
+	std::cout << "Feature length: " << input_layer_size << '\n';
+	std::cout << "Target length: " << output_layer_size << '\n';
+	std::cout << "Hidden Topology: ";
+	for (auto i : v) std::cout << i << '\t';
+	std::cout << std::endl;
+	
+	// #################### INSTANTIATE NETWORKS ################### // 
 	srand(static_cast<unsigned int>(seed));
 	Network<double> network(topology);
 	network.validate_topology(dataset);
@@ -160,12 +191,19 @@ int main( int argc, char *argv[] )
 	std::vector<Network<double>> networks;
 	for (int i = 0; i < num_eigenvectors; ++i) networks.push_back(network);
 
-	Optimizer<double> optimizer(optimizer_type, learning_rate, decay_rate, epsilon_conditioner);
-	Loss<double> loss(loss_type, operators, lagrange_multiplier, trade_off_parameter, random_domain_bound);
+	Optimizer<double> optimizer(optimizer_type, learning_rate_schedule);
+	optimizer.set_learning_rate_min(learning_rate);
+	optimizer.set_learning_rate_max(learning_rate*10);
+	optimizer.set_epochs_per_cycle(epochs_per_cycle);
+	optimizer.set_decay_rate(decay_rate);
+	optimizer.set_epsilon_conditioner(epsilon_conditioner);
+
+	Loss<double> loss(loss_type, operators, lagrange_multiplier, 
+			trade_off_parameter, random_domain_bound);
+
 	Model<double> model(networks, loss, optimizer);
 
-
-	// mse tracking
+	// #################### MAIN TRAINING LOOP ################### // 
 	boost::circular_buffer<double> mse_history(memory_window);
 
 	for (int i = 0; i < memory_window; ++i)
@@ -174,15 +212,17 @@ int main( int argc, char *argv[] )
 	double cutout_value, inactive_value;
 	std::vector<double> activities(memory_window);
 
-
-	// #################### MAIN TRAINING LOOP ################### // 
 	std::chrono::time_point<std::chrono::high_resolution_clock> start, stop, origin;
 	std::chrono::duration<double> elapsed;
 	origin = std::chrono::high_resolution_clock::now();
 	elapsed = origin - origin;
 
-	for (int epoch = 0; epoch <= epochs; ++epoch)
+	std::cout << "\nEpochs Exhausted:";
+ 	boost::progress_display progress(epochs);
+	for (int epoch = 0; epoch < epochs; ++epoch)
 	{
+		model.append_wandb_for_radviz("wandb-radviz.bin");
+		optimizer.set_epoch(epoch);
 		mse_history.push_back(model.mse(dataset));
 
 		std::adjacent_difference(
@@ -202,39 +242,62 @@ int main( int argc, char *argv[] )
 			open_ascii_escape("green");
 			std::cout << "\nSUCCESS! MODEL SATISFIED VALIDATION CUTOUT\n" << std::endl;
 			close_ascii_escape();
+			std::cout << "Epochs used: " << epoch << '\n';
 			break;
 		}
 		else if (cutout_option == "true" && inactive_value < inactive_threshold)
 		{
 			open_ascii_escape("yellow");
-			std::cout << "\nMAJOR ISSUE! MODEL STAGNATED\n" << std::endl;
+			std::cout << "\nISSUE! MODEL STAGNATED\n" << std::endl;
 			close_ascii_escape();
+			std::cout << "Epochs used: " << epoch << '\n';
 			break;
 		}
 		else
 		{
-			std::cout << epoch << '\t' << mse_history.back() << std::endl;
+			if (verbose == "true") 
+				std::cout << epoch << '\t' << mse_history.back() << std::endl;
+
 			start = std::chrono::high_resolution_clock::now();
 			model.learn_from(dataset);
 			stop = std::chrono::high_resolution_clock::now();
 			elapsed += stop - start;
 		}
 
-		if (epoch == epochs) 
-			std::cout << "Exhausted allowed epochs" << std::endl;
+		open_ascii_escape("cyan");
+		++progress;
+		close_ascii_escape();
+
+		if (epoch == epochs-1) 
+		{
+			open_ascii_escape("red");
+			std::cout << "WARNING! EXHAUSTED ALL EPOCHS\n" << std::endl;
+			close_ascii_escape();
+			std::cout << "Epochs used: " << epoch << '\n';
+		}
 	}
 	std::cout << "Training time: " << elapsed.count() << " seconds\n";
+	std::cout << "Final MSE: " << mse_history.back() << '\n';
 
 	model.print_inference_time(dataset); 
 	model.print_average_overlap(dataset);
 	model.print_average_sz_error(dataset);
 
-	if (dataset.num_eigenvectors() == 1)
+	if (post_process == "true" && num_eigenvectors == 1)
 	{
 		model.write_magnetization(dataset, "mag.dat");
 		model.write_overlap(dataset, "ovr.dat");
 		model.write_radial_visualization(dataset, "rad.dat");
+		model.write_entanglement_entropy(dataset, "ent.dat");
+
+		std::system("plot-metrics.gnu");
+		boost::filesystem::remove("mag.dat");
+		boost::filesystem::remove("ent.dat");
+		boost::filesystem::remove("ovr.dat");
+		boost::filesystem::remove("rad.dat");
+		boost::filesystem::remove("anchors.dat");
 	}
 
+	std::cout << std::endl;
 	return 0;
 }

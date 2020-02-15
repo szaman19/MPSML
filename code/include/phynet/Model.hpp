@@ -25,6 +25,7 @@ class Model
 			  const Optimizer<T>& optimizer);
 
 		void learn_from(const Dataset<T>& dataset); 
+		void train(const Dataset<T>& dataset);
 
 		T mse(const Dataset<T>& dataset);
 
@@ -32,12 +33,13 @@ class Model
 		void write_magnetization(const Dataset<T> &dataset, std::string fpath);
 
 		void write_radial_visualization(const Dataset<T> &dataset, std::string fpath);
+		void write_entanglement_entropy(const Dataset<T> &dataset, std::string fpath);
 
 		void print_average_overlap(const Dataset<T>& dataset);
 		void print_average_sz_error(const Dataset<T> &dataset);
 		void print_inference_time(const Dataset<T> &dataset);
 
-		Eigen::RowVectorXd pure_cost(const Dataset<T>& dataset);
+		void append_wandb_for_radviz(std::string fpath);
 
 		//void read(std::string fpath);
 		//void save(std::string fpath);
@@ -47,6 +49,11 @@ class Model
 		//void write_lyapunov_estimate(const Dataset<T> &dataset, std::string fpath, int epoch);
 
 	private:
+		T entanglement_entropy(Eigen::Matrix<T, Eigen::Dynamic, 1> psi) const;
+
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> 
+			reduced_density_matrix(Eigen::Matrix<T, Eigen::Dynamic, 1> psi) const;
+
 		std::vector<Network<T>> networks;
 		Loss<T> loss; 
 		Optimizer<T> optimizer;		

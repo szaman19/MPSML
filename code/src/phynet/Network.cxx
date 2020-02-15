@@ -108,10 +108,32 @@ void Network<T>::backpropagate(void)
 }
 
 template <typename T>
+Eigen::Matrix<T, 1, Eigen::Dynamic> Network<T>::flat_wandb(void) const
+{
+	std::vector<T> tmp;
+
+	for (std::size_t layer = 1; layer < layers.size(); ++layer)
+	{
+		//std::cout << layers[layer].weights.rows() << '\t' << layers[layer].weights.cols() << '\n';
+		//if (layer != layers.size() - 2)
+		{
+			for (int i = 0; i < layers[layer].weights.cols(); ++i)
+				for (int j = 0; j < layers[layer].weights.rows(); ++j)
+					tmp.push_back(layers[layer].weights(j,i));
+
+			for (int i = 0; i < layers[layer].biases.col(0).size(); ++i)
+				tmp.push_back(layers[layer].biases.col(0)(i));
+		}
+	}
+
+	return Eigen::Map<Eigen::Matrix<T, 1, Eigen::Dynamic>>(tmp.data(), 1, tmp.size());
+}
+
+template <typename T>
 Network<T>& Network<T>::operator=(const Network<T>& source)
 {
 	if (this == &source) return *this; 
-
+ 
 	deep_copy(source);
 
 	return *this;

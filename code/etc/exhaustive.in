@@ -1,27 +1,34 @@
-algorithm = bb
-batch_size = 100
-cutout_option = true
-data_root = data
-epochs = 1000
-hidden_activation = tanh
-hidden_layer_size = 100
-inactive_threshold = 1e-6
-input = fields
-instances = 40k
-lambda = 0.1
-learning_rate = 0.1
-memory_window = 30
-optimizer = sgd
-model = Ising
-num_hidden_layers = 1
-qubits = 6
-sampling = dual
-save_model = true
-shuffle = true
-seed = 5
-target_activation = tanh
-validation_threshold = 5e-3
-write_average_magnetization = true
-write_coefficients = false
-write_lyapunov_estimate = false
-write_schrodinger_error = false
+
+# ----- REQUIRED ------ #
+chain = clean-Ising
+qubits = xxx
+phase = dual
+
+
+# ----- OPTIONAL COARSE ------ #
+loss_type = xxx
+hidden_layer_dimensions = " 14 "
+#batch_size = 10
+
+# ----- OPTIONAL FINE ---- #
+epochs = 10000
+learning_rate_schedule = cosine
+post_process = true
+#num_eigenvectors = 16
+#learning_rate = 0.01
+#input = fields
+#verbose = true
+#hidden_activation_type = tanh 
+#cutout_option = false
+#inactive_threshold = 1e-7
+#validation_threshold = 0.5e-4
+#lagrange_multiplier = 100
+#random_domain_bound = 0.1
+#trade_off_parameter = 0.001
+#decay_rate = 0.9
+#epsilon_conditioner = 0.1
+#optimizer = sgd
+memory_window = 100
+#seed = 0
+#target_activation = tanh
+#data_root = data

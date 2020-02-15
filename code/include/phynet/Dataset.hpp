@@ -35,7 +35,7 @@ class Dataset
 {
 	public:
 		Dataset(int num_qubits, std::string fpath, int batch_size, 
-				std::string input, const Operators<T>& operators);
+				std::string input, const Operators<T>& operators, std::string phase);
 
 		const Batch<T>& training_energy_batch(int batch) const;
 		const Batch<T>& validation_energy_batch(int batch) const;
@@ -62,7 +62,6 @@ class Dataset
 		int num_testing_instances(void) const;
 
 		void import(void);
-
 		void shuffle(void);
 
 		const int batch_size;
@@ -71,6 +70,7 @@ class Dataset
 		Operators<T> operators;
 		
 	private:
+		std::string phase;
 		void allocate(void);
 		void init_pos(void);
 
@@ -81,9 +81,6 @@ class Dataset
 				std::vector<Batch<T>>& fields_var, 
 				std::vector<Batch<T>>& energy_var, 
 				std::vector<Waves<T>>& wavefx_var);
-
-
-
 
 		std::vector<std::streampos> pos;
 
