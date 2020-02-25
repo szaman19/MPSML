@@ -46,7 +46,7 @@ class Model
 
 		//void write_coefficients(const Dataset<T> &dataset, std::string fpath, int epoch);
 		//void write_schrodinger_error(const Dataset<T> &dataset, std::string fpath, int epoch);
-		//void write_lyapunov_estimate(const Dataset<T> &dataset, std::string fpath, int epoch);
+		void write_lyapunov_estimate(const Dataset<T> &dataset, std::string fpath, int epoch);
 
 	private:
 		T entanglement_entropy(Eigen::Matrix<T, Eigen::Dynamic, 1> psi) const;

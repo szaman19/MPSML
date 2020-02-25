@@ -1,19 +1,19 @@
 
 # ----- REQUIRED ------ #
 chain = clean-Ising
-qubits = 10
+qubits = 4
 phase = dual
 
 
 # ----- OPTIONAL COARSE ------ #
-loss_type = srr
-hidden_layer_dimensions = " 14 "
-batch_size = 10
+loss_type = bb
+hidden_layer_dimensions = " 20 "
+batch_size = 1
 
 # ----- OPTIONAL FINE ---- #
-#epochs = 3000
+#epochs = 3
 learning_rate_schedule = cosine
-post_process = true
+#post_process = true
 #num_eigenvectors = 256
 #learning_rate = 0.01
 #input = fields
@@ -21,14 +21,14 @@ post_process = true
 #hidden_activation_type = tanh
 #cutout_option = false
 #inactive_threshold = 1e-7
-#validation_threshold = 0.5e-4
+#validation_threshold = 0.1e-4
 lagrange_multiplier = 1
 #random_domain_bound = 0.1
 #trade_off_parameter = 0.001
 #decay_rate = 0.9
 #epsilon_conditioner = 0.1
-#optimizer = sgd
+#optimizer = adadelta
 #memory_window = 100
-seed = 0
+#seed = 0
 #target_activation = tanh
 #data_root = data

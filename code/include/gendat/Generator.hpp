@@ -17,25 +17,20 @@
 #include "Fields.hpp"
 #include <chrono>
 
-#define BX_MIN 0.00
-#define BX_MAX 2.00
-#define J 1.0
-#define BZ 0.01
-#define DISORDER_STRENGTH 0.01
-
 template <typename T>
 class Generator  
 {
 	public:
-		Generator(std::string model, int num_qubits, int num_transverse, int num_realizations);
+		Generator(std::string model);
 
 		void prompt_if_file(std::string fpath) const;
-		void set_dump_location(std::string fpath);
+
 		void run(void) const;
 
-	private:
-		bool ready_to_dump = false;
-		int num_qubits, num_transverse, num_realizations;
+		int dBx, dBz, qubits, replicas;
+
+		double Bx_min, Bx_max, Bz_min, Bz_max, coupling, disorder;
+
 		std::string fpath, model;
 };
 

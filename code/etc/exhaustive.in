@@ -7,13 +7,13 @@ phase = dual
 
 # ----- OPTIONAL COARSE ------ #
 loss_type = xxx
-hidden_layer_dimensions = " 14 "
-#batch_size = 10
+hidden_layer_dimensions = " xxx "
+batch_size = 10
 
 # ----- OPTIONAL FINE ---- #
-epochs = 10000
+epochs = 5
 learning_rate_schedule = cosine
-post_process = true
+#post_process = true
 #num_eigenvectors = 16
 #learning_rate = 0.01
 #input = fields
@@ -28,7 +28,7 @@ post_process = true
 #decay_rate = 0.9
 #epsilon_conditioner = 0.1
 #optimizer = sgd
-memory_window = 100
+#memory_window = 100
 #seed = 0
 #target_activation = tanh
 #data_root = data

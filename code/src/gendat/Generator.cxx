@@ -10,59 +10,34 @@
 #include <gendat/Generator.hpp>
 
 template <typename T> 
-Generator<T>::Generator(std::string model, 
-		int num_qubits, int num_transverse, int num_realizations)
-	: 
-	num_qubits(num_qubits), 
-	num_transverse(num_transverse),
-	num_realizations(num_realizations),
-	model(model)
+Generator<T>::Generator(std::string model)
+	: model(model)
 {
-	if (model != "ising" && model != "xyz")
+	if (model != "ising")
 	{
-		std::cerr << "UNSUPPORTED MODEL" << std::endl;
+		std::cerr << "CURRENTLY UNSUPPORTED MODEL" << std::endl;
 		exit(-1);
 	}
-}
-template <typename T>
-void Generator<T>::set_dump_location(std::string fpath)
-{
-	//prompt_if_file(fpath);
-	this->fpath = fpath;
-	if (boost::filesystem::exists(fpath)) boost::filesystem::remove(fpath);
-	ready_to_dump = true;
 }
 
 template <typename T>
 void Generator<T>::run(void) const
 {
-	Eigen::Array<T, Eigen::Dynamic, 1> Bx;
+	if (boost::filesystem::exists(fpath)) boost::filesystem::remove(fpath);
 
-	if (model == "ising")
-		Bx = Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(num_transverse, BX_MIN, BX_MAX);
+	Eigen::Array<T, Eigen::Dynamic, 1> Bx, Bz;
 
-	if (model == "xyz")
-	{
-		std::vector<T> x1 {-0.61, -0.65, -0.67, -0.56, -0.43, -0.22, -0.08, 
-			0.12, 0.45, 0.86, 1.14, 1.35, 1.45, 1.52, 1.50};
+	Bx = Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(dBx, Bx_min, Bx_max);
+	Bz = Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(dBz, Bz_min, Bz_max);
 
-		std::vector<T> y1 {-0.54, -0.35, -0.16, -0.11,  0.32,  0.55,  0.67, 
-			0.82, 1.07, 1.15, 1.06, 0.85, 0.67, 0.42, 0.23};
+	if (dBz == 1) Bz(0) = 0.01;
+	if (dBx == 1) Bx(0) = 0.01;
 
-
-		Bx = Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(num_transverse, -2, 2);
-	}
-
-	T W;
-
-	if (num_realizations > 1)
-		W = DISORDER_STRENGTH;
-	else
-		W = 0;
+	T W = replicas > 1 ? disorder : 0;
 
 	Fields<T> fields;
 	Solver<T> solver;
-	Operators<T> operators(num_qubits);
+	Operators<T> operators(qubits);
 	std::chrono::time_point<std::chrono::high_resolution_clock> start, stop, origin;
 	std::chrono::duration<double> elapsed;
 	origin = std::chrono::high_resolution_clock::now();
@@ -70,28 +45,25 @@ void Generator<T>::run(void) const
 
 	for (int iBx = 0; iBx < Bx.size(); ++iBx)
 	{
-		for (int iW = 0; iW < num_realizations; ++iW)
+		for (int iBz = 0; iBz < Bz.size(); ++iBz)
 		{
-			fields = Fields<T>(num_qubits, J, Bx[iBx], BZ, W);
-
-			if (model == "ising")
+			for (int iW = 0; iW < replicas; ++iW)
 			{
+				fields = Fields<T>(qubits, coupling, Bx[iBx], Bz[iBz], W);
+
 				start = std::chrono::high_resolution_clock::now();
 				solver.compute(operators.ising_hamiltonian(fields));
 				stop = std::chrono::high_resolution_clock::now();
 				elapsed += stop - start;
+
+				if (solver.info() != Eigen::Success)
+				{
+					std::cerr << " \nDIAGONALIZATION FAILED\n\n";
+					exit(-1);
+				}
+
+				Instance<T>(fields, solver).append_to_file(fpath);
 			}
-
-			if (model == "xyz")
-				solver.compute(operators.xyz_hamiltonian(fields));
-
-			if (solver.info() != Eigen::Success)
-			{
-				std::cerr << " \nDIAGONALIZATION FAILED\n\n";
-				exit(-1);
-			}
-
-			Instance<T>(fields, solver).append_to_file(fpath);
 		}
 	}
 	std::cout << "Diagonalization time: " << elapsed.count() << " seconds\n";

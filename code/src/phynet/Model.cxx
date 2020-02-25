@@ -47,6 +47,7 @@ void Model<T>::write_entanglement_entropy(const Dataset<T>& dataset, std::string
 			for (int instance = 0; instance < dataset.batch_size; ++instance)
 			{
 				file << dataset.testing_feature_batch(batch).col(instance)(n) << '\t';
+				file << dataset.testing_feature_batch(batch).col(instance)(2*n) << '\t';
 				for (std::size_t net = 0; net < this->networks.size(); ++net)
 				{
 					psi = this->networks[net].layers.back().states.col(instance);
@@ -387,6 +388,7 @@ void Model<T>::write_magnetization(const Dataset<T> &dataset, std::string fpath)
 			for (int instance = 0; instance < dataset.batch_size; ++instance)
 			{
 				file << dataset.testing_feature_batch(batch).col(instance)(n) << '\t';
+				file << dataset.testing_feature_batch(batch).col(instance)(2*n) << '\t';
 				for (std::size_t net = 0; net < this->networks.size(); ++net)
 				{
 					psi = this->networks[net].layers.back().states.col(instance);
@@ -479,6 +481,7 @@ void Model<T>::write_overlap(const Dataset<T>& dataset, std::string fpath)
 			for (int instance = 0; instance < dataset.batch_size; ++instance)
 			{
 				file << dataset.testing_feature_batch(batch).col(instance)(n) << '\t';
+				file << dataset.testing_feature_batch(batch).col(instance)(2*n) << '\t';
 				for (std::size_t net = 0; net < this->networks.size(); ++net)
 				{
 					psi = this->networks[net].layers.back().states.col(instance);
@@ -498,60 +501,59 @@ void Model<T>::write_overlap(const Dataset<T>& dataset, std::string fpath)
 	}
 }
 
-//template <typename T>
-//void Model<T>::write_lyapunov_estimate(const Dataset<T> &dataset, std::string filename, int epoch)
-//{
-	//std::ofstream file(filename + "-epoch=" + std::to_string(epoch) + ".dat");
+template <typename T>
+void Model<T>::write_lyapunov_estimate(const Dataset<T> &dataset, std::string filename, int epoch)
+{
+	std::ofstream file(filename + "-epoch=" + std::to_string(epoch) + ".dat");
 
-	//Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic> 
-		//perturbation(dataset.feature_length(), dataset.batch_size);
+	if (file.is_open())
+	{
+		file << std::scientific;
 
-	//Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic> 
-		//output_batch(dataset.target_length(), dataset.batch_size);
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> 
+			perturbation(dataset.feature_length(), dataset.batch_size);
 
-	//T rise, run;
-	//long idx;
-	
-	//if (file.is_open())
-	//{
-		//file << std::scientific;
+		Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> 
+			output_batch(dataset.target_length(), dataset.batch_size);
 
-		//for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
-		//{
-			//m_net.feedforward(dataset.feature_batch(batch));
-			//output_batch = m_net.layers.back().states;
+		T rise, run;
+		int n = dataset.operators.num_qubits;
 
-			//perturbation.setRandom();
-			//perturbation *= 0.001;
+		for (int batch = 0; batch < dataset.num_testing_batches(); ++batch)
+		{
+			for (std::size_t net = 0; net < networks.size(); ++net)
+				networks[net].feedforward(dataset.testing_feature_batch(batch));
 
-			//m_net.feedforward(dataset.feature_batch(batch) + perturbation.matrix());
+			output_batch = networks[0].layers.back().states;
 
-			//for (int instance = 0; instance < dataset.batch_size; ++instance)
-			//{
-				//idx = static_cast<long>(instance);
+			perturbation.setRandom();
+			perturbation *= 0.0001;
+			
+			for (std::size_t net = 0; net < networks.size(); ++net)
+				networks[net].feedforward(dataset.testing_feature_batch(batch) + perturbation);
 
-				//for (int i = 0; i < dataset.feature_length(); ++i)
-				//{
-					//file << std::setw(8);
-					//file << m_net.layers[0].states.col(idx)(static_cast<long>(i)) << '\t';
-				//}
+			for (int instance = 0; instance < dataset.batch_size; ++instance)
+			{
+				rise = (output_batch.col(instance) - 
+						networks[0].layers.back().states.col(instance)).norm();
 
-				//rise = (output_batch.col(idx).matrix() - m_net.layers.back().states.col(idx)).norm();
-				//run = perturbation.matrix().col(idx).norm();
+				run = perturbation.col(instance).norm();
 
-				//file << rise / run << '\n';
-			//}
-		//}
-	//}
-	//else
-	//{
-		//open_ascii_escape("red");
-		//std::cerr << "\nERROR!: FAILED TO WRITE LYAPUNOV EXPONENT\n";
-		//std::cerr << std::endl;
-		//close_ascii_escape();
-	//}
+				file << dataset.testing_feature_batch(batch).col(instance)(n) << '\t';
+				file << dataset.testing_feature_batch(batch).col(instance)(2*n) << '\t';
+				file << rise / run << '\n';
+			}
+		}
+	}
+	else
+	{
+		open_ascii_escape("red");
+		std::cerr << "\nERROR!: FAILED TO WRITE LYAPUNOV EXPONENT\n";
+		std::cerr << std::endl;
+		close_ascii_escape();
+	}
 
-//}
+}
 
 
 //template <typename T>

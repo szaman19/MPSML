@@ -15,7 +15,7 @@ include(CheckCCompilerFlag)
 include(CheckIncludeFileCXX)
 
 find_package(Git)
-find_package(Boost REQUIRED COMPONENTS random filesystem)
+find_package(Boost REQUIRED COMPONENTS random filesystem program_options)
 
 #find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
