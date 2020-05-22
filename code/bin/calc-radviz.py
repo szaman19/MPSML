@@ -41,20 +41,20 @@ for i in range(N):
 
 fig, ax = plt.subplots()
 
-n1 = 2000
+n1 = 5000
 x = b[:n1-1,0]; y = b[:n1-1,1]
-ax.plot(x, y, label="BB trained")
+ax.plot(x, y, label="MSE")
 ax.scatter(x[0], y[0], color="red")
 ax.scatter(x[-1], y[-1], color="green")
 
-n2 = 4000
+n2 = 10000
 x = b[n1:n2-1,0]; y = b[n1:n2-1,1]
-ax.plot(x, y, label="C2 trained")
+ax.plot(x, y, label="MSE + SCH")
 ax.scatter(x[0], y[0], color="red")
 ax.scatter(x[-1], y[-1], color="green")
 
 x = b[n2:,0]; y = b[n2:,1]
-ax.plot(x, y, label="Semi trained")
+ax.plot(x, y, label="MSE + VAR")
 ax.scatter(x[0], y[0], color="red")
 ax.scatter(x[-1], y[-1], color="green")
 

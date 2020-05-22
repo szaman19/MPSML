@@ -67,6 +67,8 @@ class Loss
 		void sigmoid_semi_supervised(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void sigmoid_unitarity(NetVec<T>& nets, const Dataset<T>& data, int batch);
 		void sigmoid_frobenius(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void pure_variational(NetVec<T>& nets, const Dataset<T>& data, int batch);
+		void mse_plus_variational(NetVec<T>& nets, const Dataset<T>& data, int batch);
 };
 
 inline double sigmoid(double x)

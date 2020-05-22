@@ -1,25 +1,26 @@
 
 # ----- REQUIRED ------ #
 chain = clean-Ising
-qubits = 4
+qubits = 10
 phase = dual
 
 
 # ----- OPTIONAL COARSE ------ #
 loss_type = bb
-hidden_layer_dimensions = " 20 "
+hidden_layer_dimensions = " 10 "
 batch_size = 1
 
 # ----- OPTIONAL FINE ---- #
-#epochs = 3
+epochs = 15000
+statistical_trials = 1
 learning_rate_schedule = cosine
-#post_process = true
+post_process = true
 #num_eigenvectors = 256
 #learning_rate = 0.01
 #input = fields
 #verbose = true
 #hidden_activation_type = tanh
-#cutout_option = false
+cutout_option = false
 #inactive_threshold = 1e-7
 #validation_threshold = 0.1e-4
 lagrange_multiplier = 1

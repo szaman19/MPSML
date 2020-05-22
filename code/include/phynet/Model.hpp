@@ -26,8 +26,11 @@ class Model
 
 		void learn_from(const Dataset<T>& dataset); 
 		void train(const Dataset<T>& dataset);
+		void reset(void);
 
 		T mse(const Dataset<T>& dataset);
+
+		void append_metrics(const Dataset<T> &dataset, int trial, int epoch, std::string fpath);
 
 		void write_overlap(const Dataset<T> &dataset, std::string fpath);
 		void write_magnetization(const Dataset<T> &dataset, std::string fpath);
@@ -46,7 +49,10 @@ class Model
 
 		//void write_coefficients(const Dataset<T> &dataset, std::string fpath, int epoch);
 		//void write_schrodinger_error(const Dataset<T> &dataset, std::string fpath, int epoch);
-		void write_lyapunov_estimate(const Dataset<T> &dataset, std::string fpath, int epoch);
+		void write_lyapunov_estimate(const Dataset<T> &dataset, std::string fpath);
+
+		T lyapunov_estimate(const Dataset<T> &dataset);
+		T overlap(const Dataset<T> &dataset);
 
 	private:
 		T entanglement_entropy(Eigen::Matrix<T, Eigen::Dynamic, 1> psi) const;

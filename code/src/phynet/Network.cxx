@@ -44,13 +44,18 @@ Network<T>::Network(const Topology<T> &topology)
 template <typename T>
 void Network<T>::init_weights()
 {
-	for (auto& layer : layers) layer.weights.setRandom();
+	for (std::size_t i = 0; i < layers.size(); ++i)
+	{
+		layers[i].weights.setRandom();
+		layers[i].weights *= std::sqrt( 1.0 / layers[i].weights.rows() ) ;
+	}
 }
 
 template <typename T>
 void Network<T>::init_biases(T value)
 {
-	for (auto& layer : layers) layer.biases.fill(value);
+	for (std::size_t i = 0; i < layers.size(); ++i)
+		layers[i].biases.fill(value);
 }
 
 template <typename T>

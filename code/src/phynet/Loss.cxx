@@ -343,6 +343,78 @@ void Loss<T>::rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
 }
 
 template <typename T>
+void Loss<T>::pure_variational(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::SparseMatrix<T> H(dim, dim);
+
+	Eigen::VectorXd P(dim), S(dim);
+
+	double d, a, l = lagrange_matrix.coeff(0,0);
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		P = nets[0].layers.back().states.col(instance);
+
+		H = operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+		d = P.cwiseAbs2().sum();
+		a = P.transpose() * H * P;
+
+		S = 2 * (H * P * d - a * P) / (d*d);
+
+		nets[0].layers.back().errors.col(instance) += l * S;
+	}	
+
+	nets[0].layers.back().errors.array() *= 
+		nets[0].layers.back().derivative_of_activation_on_weighted_sum();
+}
+
+template <typename T>
+void Loss<T>::mse_plus_variational(NetVec<T>& nets, const Dataset<T>& data, int batch)
+{
+	int dim = data.num_eigenvectors(); 
+
+	Eigen::SparseMatrix<T> H(dim, dim);
+
+	Eigen::VectorXd P(dim), S(dim);
+
+	double d, a, l = lagrange_matrix.coeff(0,0);
+
+	for (int instance = 0; instance < data.batch_size; ++instance)
+	{
+		// if Bx <= 0.25, add MSE loss
+		if (data.training_feature_batch(batch).col(instance)(data.num_qubits) <= 0.25)
+		{
+			for (std::size_t net = 0; net < nets.size(); ++net)
+			{
+				nets[net].layers.back().errors.col(instance) = 
+					nets[net].layers.back().states.col(instance) - 
+					data.training_target_batch(batch, net).col(instance);
+			}
+		}
+
+		//if (data.training_feature_batch(batch).col(instance)(data.num_qubits) > 0.25)
+		{
+			P = nets[0].layers.back().states.col(instance);
+
+			H = operators.ising_hamiltonian(data.training_feature_batch(batch).col(instance).data());
+
+			d = P.cwiseAbs2().sum();
+			a = P.transpose() * H * P;
+
+			S = 2 * (H * P * d - a * P) / (d*d);
+
+			nets[0].layers.back().errors.col(instance) += l * S;
+		}
+	}	
+
+	nets[0].layers.back().errors.array() *= 
+		nets[0].layers.back().derivative_of_activation_on_weighted_sum();
+}
+
+template <typename T>
 void Loss<T>::sigmoid_rayleigh_ritz(NetVec<T>& nets, const Dataset<T>& data, int batch)
 {
 	int dim = data.num_eigenvectors(); 
@@ -728,7 +800,7 @@ void Loss<T>::set_compute_pointer(std::string loss)
 	}
 	else if (loss == "srr")
 	{
-		compute = std::bind(&Loss<T>::rayleigh_ritz, this, _1, _2, _3);
+		compute = std::bind(&Loss<T>::sigmoid_rayleigh_ritz, this, _1, _2, _3);
 	}
 	else if (loss == "sf")
 	{
@@ -737,6 +809,14 @@ void Loss<T>::set_compute_pointer(std::string loss)
 	else if (loss == "se")
 	{
 		compute = std::bind(&Loss<T>::sigmoid_semi_supervised, this, _1, _2, _3);
+	}
+	else if (loss == "pv")
+	{
+		compute = std::bind(&Loss<T>::pure_variational, this, _1, _2, _3);
+	}
+	else if (loss == "mpv")
+	{
+		compute = std::bind(&Loss<T>::mse_plus_variational, this, _1, _2, _3);
 	}
 	else
 	{

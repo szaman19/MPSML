@@ -10,8 +10,7 @@
 #include <phynet/Layer.hpp>
 
 template <typename T>
-void 
-Layer<T>::reserve(int neurons_in_this_layer, int neurons_in_prev_layer, int batch_size)
+void Layer<T>::reserve(int neurons_in_this_layer, int neurons_in_prev_layer, int batch_size)
 {
 	weights.resize(neurons_in_this_layer, neurons_in_prev_layer);
 	biases.resize(neurons_in_this_layer, batch_size);

@@ -112,6 +112,10 @@ int main( int argc, char *argv[] )
 		parser.value_of_key("seed").empty() ?
 		rand() : std::atoi(parser.value_of_key("seed").c_str());
 	
+	const int statistical_trials = 
+		parser.value_of_key("statistical_trials").empty() ?
+		1 : std::atoi(parser.value_of_key("statistical_trials").c_str());
+	
 	const std::string target_activation_type = 
 		parser.value_of_key("target_activation").empty() ? 
 		"tanh" : parser.value_of_key("target_activation");
@@ -141,15 +145,13 @@ int main( int argc, char *argv[] )
 	const std::string output_root = data_root + "/output/";
 	const std::string base_input_dir = input_root + chain;
 	const std::string base_output_dir = output_root + chain;
-	
+	const std::string stats_fpath = base_output_dir + qubits + "-" + loss_type + "-stats.bin";
+
 	const std::string data_path = base_input_dir + qubits + "-qubits.bin";
 
 	Operators<double> operators(std::atoi(qubits.c_str()));
 	Dataset<double> dataset(std::atoi(qubits.c_str()), data_path, 
 			batch_size, input, operators, phase);
-
-	//for (int batch = 0; batch < dataset.num_training_batches(); ++batch)
-		//std::cout << dataset.training_feature_batch(batch) << '\n';
 
 	const int input_layer_size = dataset.feature_length();
 	const int output_layer_size = dataset.target_length();
@@ -217,86 +219,102 @@ int main( int argc, char *argv[] )
 	origin = std::chrono::high_resolution_clock::now();
 	elapsed = origin - origin;
 
-	std::cout << "\nEpochs Exhausted:";
- 	boost::progress_display progress(epochs);
-	for (int epoch = 0; epoch < epochs; ++epoch)
+	for (int trial = 0; trial < statistical_trials; ++trial)
 	{
-		model.append_wandb_for_radviz("wandb-radviz.bin");
-		optimizer.set_epoch(epoch);
-		mse_history.push_back(model.mse(dataset));
-
-		std::adjacent_difference(
-				mse_history.begin(), 
-				mse_history.end(), 
-				activities.data(),
-				[](double x, double y){return std::abs(x-y);});
-
-		inactive_value = std::accumulate(activities.begin() + 1, activities.end(), 0.0);
-		inactive_value /= memory_window;
-
-		cutout_value = std::accumulate(mse_history.begin(), mse_history.end(), 0.0);
-		cutout_value /= memory_window;
-
-		if (cutout_option == "true" && cutout_value < validation_threshold) 
+		std::cout << "\n############ Trial " << trial << " ############\n";
+		std::cout << "\nEpochs Exhausted:";
+		boost::progress_display progress(epochs);
+		for (int epoch = 0; epoch < epochs; ++epoch)
 		{
-			open_ascii_escape("green");
-			std::cout << "\nSUCCESS! MODEL SATISFIED VALIDATION CUTOUT\n" << std::endl;
+			if (post_process == "true") model.append_wandb_for_radviz("wandb-radviz.bin");
+
+			if (statistical_trials > 1)
+				model.append_metrics(dataset, trial, epoch, stats_fpath);
+
+			optimizer.set_epoch(epoch);
+			mse_history.push_back(model.mse(dataset));
+
+			std::adjacent_difference(
+					mse_history.begin(), 
+					mse_history.end(), 
+					activities.data(),
+					[](double x, double y){return std::abs(x-y);});
+
+			inactive_value = std::accumulate(activities.begin() + 1, activities.end(), 0.0);
+			inactive_value /= memory_window;
+
+			cutout_value = std::accumulate(mse_history.begin(), mse_history.end(), 0.0);
+			cutout_value /= memory_window;
+
+			if (cutout_option == "true" && cutout_value < validation_threshold) 
+			{
+				open_ascii_escape("green");
+				std::cout << "\nSUCCESS! MODEL SATISFIED VALIDATION CUTOUT\n" << std::endl;
+				close_ascii_escape();
+				std::cout << "Epochs used: " << epoch << '\n';
+				break;
+			}
+			else if (cutout_option == "true" && inactive_value < inactive_threshold)
+			{
+				open_ascii_escape("yellow");
+				std::cout << "\nISSUE! MODEL STAGNATED\n" << std::endl;
+				close_ascii_escape();
+				std::cout << "Epochs used: " << epoch << '\n';
+				break;
+			}
+			else
+			{
+				if (verbose == "true") 
+					std::cout << epoch << '\t' << mse_history.back() << std::endl;
+
+				start = std::chrono::high_resolution_clock::now();
+				model.learn_from(dataset);
+				stop = std::chrono::high_resolution_clock::now();
+				elapsed += stop - start;
+			}
+
+			open_ascii_escape("cyan");
+			++progress;
 			close_ascii_escape();
-			std::cout << "Epochs used: " << epoch << '\n';
-			break;
-		}
-		else if (cutout_option == "true" && inactive_value < inactive_threshold)
-		{
-			open_ascii_escape("yellow");
-			std::cout << "\nISSUE! MODEL STAGNATED\n" << std::endl;
-			close_ascii_escape();
-			std::cout << "Epochs used: " << epoch << '\n';
-			break;
-		}
-		else
-		{
-			if (verbose == "true") 
-				std::cout << epoch << '\t' << mse_history.back() << std::endl;
 
-			start = std::chrono::high_resolution_clock::now();
-			model.learn_from(dataset);
-			stop = std::chrono::high_resolution_clock::now();
-			elapsed += stop - start;
+			if (cutout_option == "true" && epoch == epochs-1) 
+			{
+				open_ascii_escape("red");
+				std::cout << "WARNING! EXHAUSTED ALL EPOCHS\n" << std::endl;
+				close_ascii_escape();
+				std::cout << "Epochs used: " << epoch+1 << '\n';
+			}
 		}
+		std::cout << "Training time: " << elapsed.count() << " seconds\n";
+		std::cout << "Final MSE: " << mse_history.back() << '\n';
 
-		open_ascii_escape("cyan");
-		++progress;
-		close_ascii_escape();
+		model.print_inference_time(dataset); 
+		model.print_average_overlap(dataset);
+		model.print_average_sz_error(dataset);
 
-		if (epoch == epochs-1) 
+		if (post_process == "true" && num_eigenvectors == 1)
 		{
-			open_ascii_escape("red");
-			std::cout << "WARNING! EXHAUSTED ALL EPOCHS\n" << std::endl;
-			close_ascii_escape();
-			std::cout << "Epochs used: " << epoch << '\n';
+			model.write_magnetization(dataset, "mag.dat");
+			model.write_overlap(dataset, "ovr.dat");
+			model.write_radial_visualization(dataset, "rad.dat");
+			model.write_entanglement_entropy(dataset, "ent.dat");
+
+			std::system("plot-metrics.gnu");
+			boost::filesystem::remove("mag.dat");
+			boost::filesystem::remove("ent.dat");
+			boost::filesystem::remove("ovr.dat");
+			boost::filesystem::remove("rad.dat");
+			boost::filesystem::remove("anchors.dat");
 		}
+
+		model.reset();
+		dataset.import();
 	}
-	std::cout << "Training time: " << elapsed.count() << " seconds\n";
-	std::cout << "Final MSE: " << mse_history.back() << '\n';
 
-	model.print_inference_time(dataset); 
-	model.print_average_overlap(dataset);
-	model.print_average_sz_error(dataset);
+	std::string ccom = "calc-stats-vs-epochs --fpath " + stats_fpath;
+	ccom += " --algo " + loss_type + " --qubits " + qubits;
 
-	if (post_process == "true" && num_eigenvectors == 1)
-	{
-		model.write_magnetization(dataset, "mag.dat");
-		model.write_overlap(dataset, "ovr.dat");
-		model.write_radial_visualization(dataset, "rad.dat");
-		model.write_entanglement_entropy(dataset, "ent.dat");
-
-		std::system("plot-metrics.gnu");
-		boost::filesystem::remove("mag.dat");
-		boost::filesystem::remove("ent.dat");
-		boost::filesystem::remove("ovr.dat");
-		boost::filesystem::remove("rad.dat");
-		boost::filesystem::remove("anchors.dat");
-	}
+	std::system(ccom.c_str());
 
 	std::cout << std::endl;
 	return 0;
