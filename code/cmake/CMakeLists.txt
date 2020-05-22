@@ -4,6 +4,7 @@ project(phynet LANGUAGES CXX VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(Boost_USE_MULTITHREADED FALSE)
 
 #set(MPI_CXX_COMPILER /opt/intel/compilers_and_libraries_2019.5.281/linux/mpi/intel64/bin/mpiicpc)
 #set(MPI_CXX_HEADER_DIR /opt/intel/compilers_and_libraries_2019.5.281/linux/mpi/intel64/include)
@@ -16,12 +17,13 @@ include(CheckIncludeFileCXX)
 
 find_package(Git)
 find_package(Boost REQUIRED COMPONENTS random filesystem program_options)
+#find_package(Boost REQUIRED COMPONENTS random filesystem program_options)
 
 #find_package(MPI REQUIRED)
-find_package(OpenMP REQUIRED)
+#find_package(OpenMP REQUIRED)
 #find_package(ArrayFire NO_MODULE)
 
-find_package(Eigen3 3.3.7 REQUIRED NO_MODULE) 
+#find_package(Eigen3 3.3.7 REQUIRED NO_MODULE) 
 include_directories(../lib/eigen ../lib/eigen/unsupported)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
