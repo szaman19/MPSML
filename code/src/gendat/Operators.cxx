@@ -94,7 +94,8 @@ Operators<T>::ising_hamiltonian(const T* ptr_to_instance_of_fields_batch) const
 		term2 += *(ptr + qubit + 1*num_qubits) * transverse_stencils[qubit];
 		term3 += *(ptr + qubit + 2*num_qubits) * longitudinal_stencils[qubit];
 	}
-
+        
+        
 	return (-term1 - term2 - term3) / num_qubits;
 }
 
@@ -113,7 +114,8 @@ Eigen::SparseMatrix<T> Operators<T>::ising_hamiltonian(const Fields<T>& fields) 
 		term2 += fields.transverse[qubit] * transverse_stencils[qubit];
 		term3 += fields.longitudinal[qubit] * longitudinal_stencils[qubit];
 	}
-
+        
+        std::cout << Eigen::MatrixXd((-term1-term2-term3)/num_qubits) << std::endl;
 	return (-term1 - term2 - term3) / num_qubits;
 }
 
