@@ -115,7 +115,7 @@ Eigen::SparseMatrix<T> Operators<T>::ising_hamiltonian(const Fields<T>& fields) 
 		term3 += fields.longitudinal[qubit] * longitudinal_stencils[qubit];
 	}
         
-        std::cout << Eigen::MatrixXd((-term1-term2-term3)/num_qubits) << std::endl;
+        //std::cout << Eigen::MatrixXd((-term1-term2-term3)/num_qubits) << std::endl;
 	return (-term1 - term2 - term3) / num_qubits;
 }
 
