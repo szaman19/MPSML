@@ -1,0 +1,28 @@
+#!/bin/bash 
+
+##SBATCH --ntasks=25
+##SBATCH --nodelist=europa
+##SBATCH --nodes=1
+##SBATCH --job-name=dat-gen
+##SBATCH --mail-type=END
+##SBATCH --mail-user=csingh5@binghamton.edu
+
+module load psxe-2019
+source activate qm
+
+for qubit in {2,4,6,8,10}
+do
+	for dsize in {20,40,60,80,100}
+	do
+		srun python scripts/transverse-Ising.py $qubit $dsize &
+	done
+done
+
+for qubit in {2,4,6,8,10}
+do
+	for dsize in {20,40,60,80,100}
+	do
+		srun python scripts/XXZ.py $qubit $dsize &
+	done
+done
+
