@@ -5,7 +5,7 @@ int main(){
     a.set(0,0, 1.0);
     a.set(1,1, -1.0);
 
-    
+    std::cout << a;
     DynamicMatrix b(2, 2);
     b.set(0,0,-1.0);
     b.set(0,1,1.0);
@@ -13,8 +13,8 @@ int main(){
     b.set(1,1,-1.0);
 
     std::cout << b;
-    
-    DynamicMatrix c = a.tensor(b);
+    std::cout << std::endl;
+    DynamicMatrix c = a + b;
     std::cout << "set matrices" << std::endl;
     std::cout << c;
 

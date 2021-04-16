@@ -10,6 +10,18 @@ DynamicMatrix::DynamicMatrix(std::string input){
     
 }
 
+DynamicMatrix::DynamicMatrix(const DynamicMatrix & other){
+    this->rows = other.rows;
+    this->cols = other.cols;
+    matrixEntries.clear();
+    for(auto const& x : other.matrixEntries){
+ 
+        matrixEntries.insert(std::pair<int, double>(x.first, x.second));
+
+    }
+
+}
+
 
 double DynamicMatrix::get(int i, int j) const{
     int elementPosition = j * rows + i;
@@ -31,8 +43,9 @@ void DynamicMatrix::set(int i, int j, double d){
     if(matrixEntries.find(elementPosition) != matrixEntries.end()){
         matrixEntries.erase(elementPosition);
     }
-
-    matrixEntries.insert(std::pair<int, double>(elementPosition, d));
+    if(d != 0.0){
+        matrixEntries.insert(std::pair<int, double>(elementPosition, d));
+    }
 
 }
 
@@ -72,8 +85,17 @@ DynamicMatrix & DynamicMatrix::operator*(const DynamicMatrix & other){
                 out.set(i,j,value);
             }
         }
-        *this = out;
+         this->rows = out.rows;
+        this->cols = out.cols;
+        matrixEntries.clear();
+        for(auto const& x : out.matrixEntries){
+            matrixEntries.insert(std::pair<int, double>(x.first, x.second));
+        }
+
+
     }
+   
+
     return *this;
 
 }
@@ -81,12 +103,15 @@ DynamicMatrix & DynamicMatrix::operator*(const DynamicMatrix & other){
 
 
 DynamicMatrix& DynamicMatrix::operator=(const DynamicMatrix& other){
-    this->rows = other.rows;
-    this->cols = other.cols;
-    matrixEntries.clear();
-    for(auto const& x : other.matrixEntries){
- 
-        matrixEntries.insert(std::pair<int, double>(x.first, x.second));
+    if(this != &other){
+        this->rows = other.rows;
+        this->cols = other.cols;
+        matrixEntries.clear();
+        for(auto const& x : other.matrixEntries){
+    
+            matrixEntries.insert(std::pair<int, double>(x.first, x.second));
+
+        }
 
     }
     return *this;
@@ -94,12 +119,19 @@ DynamicMatrix& DynamicMatrix::operator=(const DynamicMatrix& other){
 }
 
 DynamicMatrix& DynamicMatrix::operator+(const DynamicMatrix& other){
+    DynamicMatrix output (this->rows, this->cols);
     if(other.rows == this->rows && other.cols == this->cols){
         for(int i = 0; i < this->rows; i++){
             for(int j = 0; j < this->cols; j++){
-                if(this->isNotSparse(i,j))
-                this->set(i,j, this->get(i,j)+ other.get(i,j));
+                double result = this->get(i,j)+ other.get(i,j);
+                output.set(i,j, result);
             }
+
+        }
+        matrixEntries.clear();
+        for(auto const& x : output.matrixEntries){
+            matrixEntries.insert(std::pair<int, double>(x.first, x.second));
+           
         }
     }
     return *this;
@@ -109,7 +141,6 @@ DynamicMatrix& DynamicMatrix::operator-(const DynamicMatrix& other){
     if(other.rows == this->rows && other.cols == this->cols){
         for(int i = 0; i < this->rows; i++){
             for(int j = 0; j < this->cols; j++){
-                if(this->isNotSparse(i,j))
                 this->set(i,j, this->get(i,j)- other.get(i,j));
             }
         }

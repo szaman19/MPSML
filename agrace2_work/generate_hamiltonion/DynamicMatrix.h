@@ -18,6 +18,7 @@ class DynamicMatrix{
         DynamicMatrix & operator+(const DynamicMatrix& other);
         DynamicMatrix & operator*(const DynamicMatrix& other);
         DynamicMatrix & operator-(const DynamicMatrix& other);
+        DynamicMatrix(const DynamicMatrix & other);
 
 
         friend std::ostream& operator<<(std::ostream& os, const DynamicMatrix & matrix); 
