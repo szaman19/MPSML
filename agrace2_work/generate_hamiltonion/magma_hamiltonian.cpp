@@ -69,29 +69,70 @@ DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double B
     where I = 2x2 identity matrix
     */
 
-    DynamicMatrix JTerms(latice_size * latice_size,latice_size * latice_size);
+    /*
+    Assuming 9 qubits
+
+    0 - 1 - 2
+    |   |   |
+    3 - 4 - 5
+    |   |   |
+    6 - 7 - 8
+
+    0-1  q + 1
+    0-3  q + sqrt(9)
+    1-2  q + 1
+    1-4  1 + sqrt(9)
+    2-5  2 + sqrt(9)
+    3-4  q + 1
+    3-6  q + sqrt(9)
+    4-5  q + 1
+    4-7  q + sqrt(3)
+    5-8  q + sqrt(3)
+    6-7  q + 1
+    7-8  q + 1
+
+
+    0 - 1
+    |   |
+    2 - 3
+
+    0-1
+    0-2
+    1-3
+    2-3
     
-    for(int q = 0; q < latice_size; q++){
+
+    */
+    int N = latice_size * latice_size;
+    DynamicMatrix JTerms(N*N,N*N);
+
+    for(int q = 0; q < N; q++){
         //Find uncounted adjacent terms
-        DynamicMatrix start = generateSigma('z',q,latice_size);
-        if(q + 1 < latice_size){
-            DynamicMatrix leftAdjacent = generateSigma('z',q + 1,latice_size);
+        DynamicMatrix start = generateSigma('z',q,N);
+        if(q + 1 < N && (q+1) % latice_size != 0){
+            DynamicMatrix leftAdjacent = generateSigma('z',q + 1,N);
             JTerms = JTerms + (start * leftAdjacent);
+            std::cout << q << "-" << q+1 <<std::endl;
         }
-        if(q + log2(latice_size) < latice_size){
-            DynamicMatrix underAdjacent = generateSigma('z',q + log2(latice_size),latice_size);
+        if(q + latice_size < N ){
+            DynamicMatrix underAdjacent = generateSigma('z',q + latice_size,N);
             JTerms = JTerms + (start * underAdjacent);
+            std::cout << q << "-" << q+latice_size <<std::endl;
         }
     }
+
 
     DynamicMatrix BzTerms(1,1);
     BzTerms.set(0,0,1.0);
     for(int q = 0; q < latice_size; q++){
         if(q == 0){
-            BzTerms = generateSigma('z', q, latice_size);
+            BzTerms = generateSigma('z', q, N);
+
         }
         else{
-            BzTerms = BzTerms + generateSigma('z', q, latice_size);
+            BzTerms = BzTerms + generateSigma('z', q, N);
+            
+
         }
     }
     
@@ -99,23 +140,22 @@ DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double B
     BxTerms.set(0,0,1.0);
     for(int q = 0; q < latice_size; q++){
         if(q == 0){
-            BxTerms = generateSigma('x', q, latice_size);
-            std::cout << "x1:\n" << BxTerms << std::endl;
+            BxTerms = generateSigma('x', q, N);
+            
         }
         else{
-            BxTerms = ( BxTerms + generateSigma('x', q, latice_size));
-            std::cout << "xn:\n" << generateSigma('x', q, latice_size)<< std::endl;
+            BxTerms = ( BxTerms + generateSigma('x', q, N));
+            
         }
         
     }
 
-    
     JTerms = JTerms * J;
     BxTerms = BxTerms * Bx;
     BzTerms = BzTerms * Bz;
 
     
-    DynamicMatrix output = JTerms + (BxTerms * -1) + (BzTerms * -1);
+    DynamicMatrix output =  JTerms + (BxTerms * -1) + (BzTerms * -1);
 
     return output;
     
@@ -129,6 +169,7 @@ int main(){
 
     sigma_hat_z_i.set(0,0,1.0);
     sigma_hat_z_i.set(1,1,1.0);
+
 
     DynamicMatrix x = generateHamiltonian(2, 1,1,1);
     std::cout << x;
