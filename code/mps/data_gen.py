@@ -11,7 +11,7 @@ data_dir = osp.join(cur_dir, "release")
 #print(data_dir)
 
 def parser(num_qubits):
-    data_file = open(osp.join(data_dir, str(num_qubits)+"-qubits_critical.bin"), 'rb')
+    data_file = open(osp.join(data_dir, str(num_qubits)+"-qubits.bin"), 'rb')
 
     num_fields = 3 * num_qubits
     num_energies = 2 ** (num_qubits)
@@ -45,7 +45,7 @@ def parser(num_qubits):
     np.savez(str(num_qubits)+"_qubit_crit_data",ground_state = ground_states, fields = fields)
 
 def main():
-    sample_sites = [2,4,6,7,10]
+    sample_sites = [2,4,6,7]
     for each in tqdm(sample_sites):
         parser(each)
 main()
