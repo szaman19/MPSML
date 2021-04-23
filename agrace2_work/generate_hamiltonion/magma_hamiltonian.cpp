@@ -32,7 +32,7 @@ DynamicMatrix generateSigma(char spinDirection, int i, int N)
     {
 
         //std::cout << "x = " << x  <<std::endl << output << std::endl <<std::endl;
-        if (x == i - 1)
+        if (x == i)
         {
             if (spinDirection == 'x')
             {
@@ -126,7 +126,7 @@ DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double B
         }
         if (q + latice_size < N)
         {
-            DynamicMatrix underAdjacent = generateSigma('z', q + latice_size, N);
+            DynamicMatrix underAdjacent = generateSigma('z', q + latice_size , N);
             //Commuativity quirk...
             JTerms = JTerms + (underAdjacent * start);
         }
