@@ -1,7 +1,7 @@
 
-#include<iostream>
-#include<tgmath.h>
-#include"DynamicMatrix.cpp"
+#include <iostream>
+#include <tgmath.h>
+#include "DynamicMatrix.cpp"
 /*
 Hamiltonian Generator and Solver
 Andrew T Grace, Binghamton University.
@@ -13,40 +13,47 @@ This code uses the MAGMA solver. Column-major layout for general matrices
 
 */
 
-DynamicMatrix sigma_hat_x_i(2,2);
+DynamicMatrix sigma_hat_x_i(2, 2);
 
-DynamicMatrix sigma_hat_z_i(2,2);
-DynamicMatrix generateSigma(char spinDirection, int i, int N){
+DynamicMatrix sigma_hat_z_i(2, 2);
+DynamicMatrix I4(2, 2);
+DynamicMatrix generateSigma(char spinDirection, int i, int N)
+{
 
     //Finds sigma (spin) (i)
     //Basically I tensored with itself N-1 times, then tensored with corresponding sigma
     //then THAT all tensored with I tensored with itself N times.
 
     //Generate new dynamic matrices
-    DynamicMatrix output(1,1);
-    output.set(0,0,1.0);
-    
-    for(int x = 0; x < N; x++){
-        if(x == i-1 ){
-            if(spinDirection == 'x'){
+    DynamicMatrix output(1, 1);
+    output.set(0, 0, 1.0);
+
+    for (int x = 0; x < N; x++)
+    {
+
+        //std::cout << "x = " << x  <<std::endl << output << std::endl <<std::endl;
+        if (x == i - 1)
+        {
+            if (spinDirection == 'x')
+            {
                 output = output.tensor(sigma_hat_x_i);
             }
-            else{
+            else
+            {
                 output = output.tensor(sigma_hat_z_i);
             }
         }
-        else{
-            output = output.tensor(sigma_hat_z_i);
+        else
+        {
+            output = output.tensor(I4);
         }
-
     }
 
     return output;
-
 }
 
-
-DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double Bz){
+DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double Bz)
+{
     /*
     Hamiltonian Definition
 
@@ -104,76 +111,81 @@ DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double B
 
     */
     int N = latice_size * latice_size;
-    DynamicMatrix JTerms(N*N,N*N);
+    DynamicMatrix JTerms(N * N, N * N);
 
-    for(int q = 0; q < N; q++){
+    for (int q = 0; q < N; q++)
+    {
         //Find uncounted adjacent terms
-        DynamicMatrix start = generateSigma('z',q,N);
-        if(q + 1 < N && (q+1) % latice_size != 0){
-            DynamicMatrix leftAdjacent = generateSigma('z',q + 1,N);
-            JTerms = JTerms + (start * leftAdjacent);
-            std::cout << q << "-" << q+1 <<std::endl;
+        DynamicMatrix start = generateSigma('z', q, N);
+
+        if (q + 1 < N && (q + 1) % latice_size != 0)
+        {
+            DynamicMatrix leftAdjacent = generateSigma('z', q + 1, N);
+            //Commuativity quirk...
+            JTerms = JTerms + (leftAdjacent * start);
         }
-        if(q + latice_size < N ){
-            DynamicMatrix underAdjacent = generateSigma('z',q + latice_size,N);
-            JTerms = JTerms + (start * underAdjacent);
-            std::cout << q << "-" << q+latice_size <<std::endl;
+        if (q + latice_size < N)
+        {
+            DynamicMatrix underAdjacent = generateSigma('z', q + latice_size, N);
+            //Commuativity quirk...
+            JTerms = JTerms + (underAdjacent * start);
         }
+
     }
 
-
-    DynamicMatrix BzTerms(1,1);
-    BzTerms.set(0,0,1.0);
-    for(int q = 0; q < latice_size; q++){
-        if(q == 0){
+    DynamicMatrix BzTerms(1, 1);
+    BzTerms.set(0, 0, 1.0);
+    for (int q = 0; q < N; q++)
+    {
+        if (q == 0)
+        {
             BzTerms = generateSigma('z', q, N);
-
         }
-        else{
+        else
+        {
             BzTerms = BzTerms + generateSigma('z', q, N);
-            
-
         }
     }
-    
-    DynamicMatrix BxTerms(1,1);
-    BxTerms.set(0,0,1.0);
-    for(int q = 0; q < latice_size; q++){
-        if(q == 0){
+
+    DynamicMatrix BxTerms(1, 1);
+    BxTerms.set(0, 0, 1.0);
+    for (int q = 0; q < N; q++)
+    {
+        if (q == 0)
+        {
             BxTerms = generateSigma('x', q, N);
-            
         }
-        else{
-            BxTerms = ( BxTerms + generateSigma('x', q, N));
-            
+        else
+        {
+            BxTerms = (BxTerms + generateSigma('x', q, N));
         }
-        
     }
 
     JTerms = JTerms * J;
     BxTerms = BxTerms * Bx;
     BzTerms = BzTerms * Bz;
 
-    
-    DynamicMatrix output =  JTerms + (BxTerms * -1) + (BzTerms * -1);
-
+    DynamicMatrix output = JTerms + (BxTerms * -1) + (BzTerms * -1);
     return output;
-    
 }
 
+int main()
+{
+    sigma_hat_x_i.set(0, 1, 1.0);
+    sigma_hat_x_i.set(1, 0, 1.0);
 
+    sigma_hat_z_i.set(0, 0, 1.0);
+    sigma_hat_z_i.set(1, 1, -1.0);
 
-int main(){
-    sigma_hat_x_i.set(0,1,1.0);
-    sigma_hat_x_i.set(1,0,1.0);
+    I4.set(0, 0, 1.0);
+    I4.set(1, 1, 1.0);
 
-    sigma_hat_z_i.set(0,0,1.0);
-    sigma_hat_z_i.set(1,1,1.0);
+    std::cout << "J Term:" << std::endl
+              << generateHamiltonian(2, 1, 0, 0).printLatex() << std::endl;
+    std::cout << "Bx Term:" << std::endl
+              << generateHamiltonian(2, 0, -1, 0).printLatex() << std::endl;
+    std::cout << "Bz Term:" << std::endl
+              << generateHamiltonian(2, 0, 0, -1).printLatex() << std::endl;
 
-
-    DynamicMatrix x = generateHamiltonian(2, 1,1,1);
-    std::cout << x;
-
-
-
+    std::cout << "Complete, all scalars = 1:" << std::endl << generateHamiltonian(2, 1,1,1).printLatex() <<std::endl;
 }

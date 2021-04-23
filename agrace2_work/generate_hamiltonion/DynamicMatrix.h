@@ -1,5 +1,7 @@
 #include<iostream>
 #include<map>
+#include <iomanip>
+#include<sstream>
 //A helper class for storing matrices, and getting them in a representation for MAGMA
 //Column-major calculation (j * rows) + i, sparse representation
 
@@ -20,6 +22,7 @@ class DynamicMatrix{
         DynamicMatrix & operator-(const DynamicMatrix& other);
         DynamicMatrix(const DynamicMatrix & other);
 
+        std::string printLatex();
 
         friend std::ostream& operator<<(std::ostream& os, const DynamicMatrix & matrix); 
 

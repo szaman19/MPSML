@@ -80,12 +80,12 @@ DynamicMatrix & DynamicMatrix::operator*(const DynamicMatrix & other){
             for(int j = 0; j < other.cols; j++){
                 double value = 0.0;
                 for(int k = 0; k < this->cols; k++){
-                    value += this->get(i,k) * other.get(k, j);
+                    value += this->get( i, k) * other.get( k, j);
                 }
                 out.set(i,j,value);
             }
         }
-         this->rows = out.rows;
+        this->rows = out.rows;
         this->cols = out.cols;
         matrixEntries.clear();
         for(auto const& x : out.matrixEntries){
@@ -149,6 +149,23 @@ DynamicMatrix& DynamicMatrix::operator-(const DynamicMatrix& other){
 
 }
 
+std::string DynamicMatrix::printLatex(){
+    std::string output = "\\begin{bmatrix} \n" ;
+    for(int i = 0; i < this->rows; i++){
+        for(int j = 0; j < this->cols; j++){
+            std::stringstream number;
+            number.precision(2);
+            number << this->get(i,j);
+            output += number.str();
+            if( j != this->cols - 1) output += " & ";
+        }
+        if(i != this->rows - 1) output += "\\\\ \n ";
+    }
+    output += "\\end{bmatrix}";
+
+    return output;
+}
+
 
 DynamicMatrix  DynamicMatrix::tensor(DynamicMatrix & other){
     /*
@@ -185,9 +202,10 @@ std::ostream& operator<<(std::ostream& os, const DynamicMatrix& matrix){
 
     for(int i = 0; i < matrix.rows; i++){
         for(int j = 0; j < matrix.cols; j++){
-            os << matrix.get(i,j) << "   ";
+            os << std::setfill(' ') << std::setw(5) << matrix.get(i,j) << "   ";
         }
         os << std::endl;
     }
     return os;
 }
+
