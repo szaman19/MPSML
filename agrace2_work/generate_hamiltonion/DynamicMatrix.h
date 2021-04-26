@@ -1,3 +1,4 @@
+#pragma once
 #include<iostream>
 #include<map>
 #include <iomanip>
@@ -10,6 +11,11 @@ class DynamicMatrix{
         double * getForMagma();
         DynamicMatrix(int row, int col);
         DynamicMatrix(std::string input);
+        DynamicMatrix(){
+            cols = 1;
+            rows = 1;
+            set(0,0,1.0);
+        }
         void set(int i, int j, double d);
         double get(int i, int j) const;
         bool isNotSparse(int i, int j) const;
