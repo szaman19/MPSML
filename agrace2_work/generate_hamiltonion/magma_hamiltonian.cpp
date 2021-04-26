@@ -28,7 +28,7 @@ DynamicMatrix generateSigma(char spinDirection, int i, int N)
     DynamicMatrix output(1, 1);
     output.set(0, 0, 1.0);
 
-    for (int x = 0; x < N; x++)
+    for (int x = 1; x < N+1; x++)
     {
 
         //std::cout << "x = " << x  <<std::endl << output << std::endl <<std::endl;
@@ -36,21 +36,51 @@ DynamicMatrix generateSigma(char spinDirection, int i, int N)
         {
             if (spinDirection == 'x')
             {
+                
                 output = output.tensor(sigma_hat_x_i);
             }
             else
             {
+                
                 output = output.tensor(sigma_hat_z_i);
             }
+        }
+        else
+        {
+            
+            output = output.tensor(I4);
+        }
+        
+    }
+
+    return output;
+}
+
+DynamicMatrix generateDualInteraction(int i, int j, int N){
+    DynamicMatrix output(1, 1);
+    output.set(0, 0, 1.0);
+    
+    for (int x = 1; x < N+1; x++)
+    {
+        //std::cout << "x = " << x  <<std::endl << output << std::endl <<std::endl;
+        if (x == i)
+        {
+            output = output.tensor(sigma_hat_z_i);
+        }
+        else if(x == j){
+            output = output.tensor(sigma_hat_z_i);
         }
         else
         {
             output = output.tensor(I4);
         }
     }
-
     return output;
+
+
 }
+
+
 
 DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double Bz)
 {
@@ -113,31 +143,26 @@ DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double B
     int N = latice_size * latice_size;
     DynamicMatrix JTerms(N * N, N * N);
 
-    for (int q = 0; q < N; q++)
+    for (int q = 1; q < N+1; q++)
     {
         //Find uncounted adjacent terms
-        DynamicMatrix start = generateSigma('z', q, N);
 
-        if (q + 1 < N && (q + 1) % latice_size != 0)
-        {
-            DynamicMatrix leftAdjacent = generateSigma('z', q + 1, N);
-            //Commuativity quirk...
-            JTerms = JTerms + (leftAdjacent * start);
+        if (q + 1 < (N+1) && (q + 2) % latice_size != 0)
+        {            
+            JTerms = JTerms + generateDualInteraction(q, q+1, N);
         }
-        if (q + latice_size < N)
+        if (q + latice_size < (N+1))
         {
-            DynamicMatrix underAdjacent = generateSigma('z', q + latice_size , N);
-            //Commuativity quirk...
-            JTerms = JTerms + (underAdjacent * start);
+            JTerms = JTerms + generateDualInteraction(q, q + latice_size, N);
         }
 
     }
 
     DynamicMatrix BzTerms(1, 1);
     BzTerms.set(0, 0, 1.0);
-    for (int q = 0; q < N; q++)
+    for (int q = 1; q < N+1; q++)
     {
-        if (q == 0)
+        if (q == 1)
         {
             BzTerms = generateSigma('z', q, N);
         }
@@ -149,9 +174,9 @@ DynamicMatrix generateHamiltonian(int latice_size, double J, double Bx, double B
 
     DynamicMatrix BxTerms(1, 1);
     BxTerms.set(0, 0, 1.0);
-    for (int q = 0; q < N; q++)
+    for (int q = 1; q < N+1; q++)
     {
-        if (q == 0)
+        if (q == 1)
         {
             BxTerms = generateSigma('x', q, N);
         }
@@ -181,11 +206,15 @@ int main()
     I4.set(1, 1, 1.0);
 
     std::cout << "J Term:" << std::endl
-              << generateHamiltonian(2, 1, 0, 0).printLatex() << std::endl;
+               << generateHamiltonian(2, 1, 0, 0).printLatex() << std::endl;
     std::cout << "Bx Term:" << std::endl
               << generateHamiltonian(2, 0, -1, 0).printLatex() << std::endl;
     std::cout << "Bz Term:" << std::endl
               << generateHamiltonian(2, 0, 0, -1).printLatex() << std::endl;
 
     std::cout << "Complete, all scalars = 1:" << std::endl << generateHamiltonian(2, 1,1,1).printLatex() <<std::endl;
+
+    std::cout << "sigma x2 " << std::endl << generateSigma('x', 2, 4);
+
+    
 }
