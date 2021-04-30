@@ -21,11 +21,11 @@ class DynamicMatrix{
         bool isNotSparse(int i, int j) const;
         //Tensor Product
         DynamicMatrix  tensor(DynamicMatrix & other);
-        DynamicMatrix & operator*(double d);
+        DynamicMatrix operator*(double d);
         DynamicMatrix & operator=(const DynamicMatrix& other);
-        DynamicMatrix & operator+(const DynamicMatrix& other);
-        DynamicMatrix & operator*(const DynamicMatrix& other);
-        DynamicMatrix & operator-(const DynamicMatrix& other);
+        DynamicMatrix operator+(const DynamicMatrix& other);
+        DynamicMatrix operator*(const DynamicMatrix& other);
+        DynamicMatrix operator-(const DynamicMatrix& other);
         DynamicMatrix(const DynamicMatrix & other);
 
         std::string printLatex();

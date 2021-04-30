@@ -7,6 +7,7 @@ IsingHamiltonian::IsingHamiltonian(int latice_size){
     generateJMatrix();
     generateBxMatrix();
     generateBzMatrix();
+    
 }
 
 void IsingHamiltonian::initializePauliMatrices(){
@@ -96,5 +97,11 @@ void IsingHamiltonian::generateBzMatrix(){
 }
 
 DynamicMatrix IsingHamiltonian::getHamiltonian(double J, double Bx, double Bz){
-    return (JTerms * J) + (BxTerms * Bx) + (BzTerms * Bz);
+    DynamicMatrix Jmul = JTerms * J;
+
+    DynamicMatrix Bxmul = BxTerms * (Bx * -1.0);
+
+    DynamicMatrix Bzmul = BzTerms * (Bz * -1.0);
+
+    return Jmul + Bxmul + Bzmul;
 }
