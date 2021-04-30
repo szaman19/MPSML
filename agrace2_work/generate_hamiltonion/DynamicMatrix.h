@@ -30,6 +30,13 @@ class DynamicMatrix{
 
         std::string printLatex();
 
+        int getRows(){
+            return rows;
+        }
+        int getCols(){
+            return cols;
+        }
+
         friend std::ostream& operator<<(std::ostream& os, const DynamicMatrix & matrix); 
 
     private:

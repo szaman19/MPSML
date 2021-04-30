@@ -18,10 +18,10 @@ int main(int argc, char * argc){
 
     // Hamiltonian generation
 
-    int latice_size;
-    double J;
-    double Bx;
-    double Bz;
+    int latice_size = 2;
+    double J = 1.0;
+    double Bx = 1;
+    double Bz = 1;
 
     // Get the values from args 
 
@@ -37,6 +37,10 @@ int main(int argc, char * argc){
         return 0;
     }
 
+    // Generate the Ising Hamiltonian for this problem
+
+    IsingHamiltonian hamiltonian(latice_size);
+    DynamicMatrix matrixToDiagonalize = hamiltonian.getHamiltonian(J, Bx, Bz);
 
 
     EPS eps;                // Eigensolver context
@@ -46,6 +50,21 @@ int main(int argc, char * argc){
     PetscInt j, nconv;      // Petsc parameters
     PetscReal error;        // Errorvalue
 
+    // Setup matrix A
+    MatSetSizes(A, PETSC_DECIDE, PETSC_DECIDE, matrixToDiagonalize.getRows(), matrixToDiagonalize.getCols());
+    MatSetFromOptions(A);
+    MatSetUp(A);
+
+    //Add values to Matrix A
+    PetscInt Istart, Iend;
+
+    MatGetOwnershipRange(A,&Istart,&Iend);
+    
+    for(int i = Istart; i < Iend; i++){
+        for(int j = 0; j < matrixToDiagonalize.getCols(); j++){
+            MatSetValue(A, i, j, matrixToDiagonalize.get(i,j), INSERT_VALUES);
+        }
+    }
 
 
     EPSCreate(PETSC_COMM_WORLD, &eps);          // Set up the eigensolver context
@@ -55,7 +74,14 @@ int main(int argc, char * argc){
     EPSSolve(eps);                              // Solve the problem
     EPSGetConverged(eps, &nconv);               // Represent
     for(j = 0; j < nconv; j++){
-        EPSGetEigenpair (eps, j, &kr, &ki, xr, xi);         //Read out the eigenvector
+        EPSGetEigenpair(eps, j, &kr, &ki, xr, xi);         //Read out the eigenvector
+        re = kr;
+        im = ki;
+        if (im!=0.0) {
+             PetscPrintf(PETSC_COMM_WORLD," %9f%+9fi \n",(double)re,(double)im);
+        } else {
+            PetscPrintf(PETSC_COMM_WORLD,"   %12f       \n",(double)re);
+        }
     }
     EPSDestroy(&eps);
 
