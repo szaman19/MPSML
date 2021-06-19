@@ -4,6 +4,7 @@
 //                                                                           //
 // created December 12, 2019                                                 //
 // copyright Christopher N. Singh Binghamton University Physics              //
+// modified 2021 by Andrew T Grace, Binghamton CS                            //
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -26,6 +27,7 @@ class Generator
 		void prompt_if_file(std::string fpath) const;
 
 		void run(void) const;
+        void runParallel(void) const;
 
 		int dBx, dBz, qubits, replicas;
 

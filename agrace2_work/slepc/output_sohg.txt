@@ -1,0 +1,44 @@
+16
+Lowest Eigenvalues:
+Real portion: -5.53507
+Imaginary Portion: 0
+Real Eigenvector:
+Vec Object: 1 MPI processes
+  type: seq
+-0.202857
+-0.280707
+-0.280707
+-0.140831
+-0.280707
+-0.140831
+-0.507801
+-0.109049
+-0.280707
+-0.507801
+-0.140831
+-0.109049
+-0.140831
+-0.109049
+-0.109049
+-0.032227
+
+Imaginary Eigenvector: 
+Vec Object: 1 MPI processes
+  type: seq
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+0.
+
