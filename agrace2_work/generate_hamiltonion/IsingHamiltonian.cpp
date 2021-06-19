@@ -38,6 +38,7 @@ DynamicMatrix IsingHamiltonian::generateSelfInteraction(char spin, int i){
         }
         else
             output = output.tensor(I2);
+
     }
     
     return output;
@@ -59,7 +60,12 @@ DynamicMatrix IsingHamiltonian::generateAdjacentInteractionZ(int i, int j){
 }
 
 void IsingHamiltonian::generateJMatrix(){
-    JTerms = DynamicMatrix(N * N, N * N);
+    int matrixDim = 1;
+    for(int i = 0; i < N; i++){
+        matrixDim = 2 * matrixDim;
+    }
+    
+    JTerms = DynamicMatrix(matrixDim, matrixDim);
     for (int q = 1; q < N+1; q++)
     {
         if (q + 1 < (N+1) && (q + 2) % latice_size_one_dimension != 0)          
