@@ -14,8 +14,8 @@ def parser(num_qubits):
     data_file = open(osp.join(data_dir, str(num_qubits)+"-qubits.bin"), 'rb')
 
     num_fields = 3 * num_qubits
-    num_energies = 2 ** (num_qubits)
-    num_coefficients = 2 ** (2 * num_qubits)
+    num_energies = 1 
+    num_coefficients = 2 ** (num_qubits)
 
     num_doubles = num_fields + num_energies + num_coefficients
     struct_size = (num_fields + num_energies + num_coefficients) * 8 
