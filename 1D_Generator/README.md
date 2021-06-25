@@ -1,6 +1,9 @@
 ### This requires the library eigen to be in this subdirectory 
 Add the submodule by doing 
-
+```
+git submodule update --init --recursive
+```
+or
 ```
 git submodule add https://gitlab.com/libeigen/eigen.git
 ```
