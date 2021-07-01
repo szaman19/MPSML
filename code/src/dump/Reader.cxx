@@ -14,7 +14,7 @@ void Reader<T>::read(void)
 {
 	int dim = (int)(pow(2, num_qubits) + 0.5);	
 
-	long offset = (3*num_qubits + dim + dim*dim)*sizeof(T);
+	long offset = (3*num_qubits + 1 + dim)*sizeof(T);
 	int num_instances = boost::filesystem::file_size(fpath)/offset;
 
 	std::ifstream file(fpath.c_str(), std::ios::binary);
@@ -26,8 +26,8 @@ void Reader<T>::read(void)
 	}
 
 	Fields<T> tmp_fields(num_qubits);	
-	Eigen::Matrix<T, Eigen::Dynamic, 1> tmp_values(dim);
-	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> tmp_wavefx(dim, dim);
+	Eigen::Matrix<T, Eigen::Dynamic, 1> tmp_values(1);
+	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> tmp_wavefx(dim,1);
 	
 	if (file.eof())
 	{
@@ -40,8 +40,8 @@ void Reader<T>::read(void)
 		file.read((char*)tmp_fields.coupling.data(), num_qubits * sizeof(T));
 		file.read((char*)tmp_fields.transverse.data(), num_qubits * sizeof(T));
 		file.read((char*)tmp_fields.longitudinal.data(), num_qubits * sizeof(T));
-		file.read((char*)tmp_values.data(), dim * sizeof(T));
-		file.read((char*)tmp_wavefx.data(), dim * dim * sizeof(T));
+		file.read((char*)tmp_values.data(), sizeof(T));
+		file.read((char*)tmp_wavefx.data(), dim * sizeof(T));
 
 		fields.push_back(tmp_fields);
 		values.push_back(tmp_values);

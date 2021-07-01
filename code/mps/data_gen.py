@@ -11,11 +11,11 @@ data_dir = osp.join(cur_dir, "release")
 #print(data_dir)
 
 def parser(num_qubits):
-    data_file = open(osp.join(data_dir, str(num_qubits)+"-qubits_critical.bin"), 'rb')
+    data_file = open(osp.join(data_dir, str(num_qubits)+"-qubits.bin"), 'rb')
 
     num_fields = 3 * num_qubits
-    num_energies = 2 ** (num_qubits)
-    num_coefficients = 2 ** (2 * num_qubits)
+    num_energies = 1 
+    num_coefficients = 2 ** (num_qubits)
 
     num_doubles = num_fields + num_energies + num_coefficients
     struct_size = (num_fields + num_energies + num_coefficients) * 8 
@@ -45,7 +45,7 @@ def parser(num_qubits):
     np.savez(str(num_qubits)+"_qubit_crit_data",ground_state = ground_states, fields = fields)
 
 def main():
-    sample_sites = [2,4,6,7,10]
+    sample_sites = [12]
     for each in tqdm(sample_sites):
         parser(each)
 main()

@@ -39,7 +39,7 @@ class MPS_autoencoder(nn.Module):
         temp = encoded.view(-1, 2,self.mps_size,self.mps_size)
         spin_up, spin_down = torch.split(temp, 1, dim = 1)
         return spin_up, spin_down
-    
+     
     def decode(self, spin_up, spin_down, num_qubits):
         # spin_up and spin_down (1,mps.size,mps.size)
         mps = {'0':spin_up, '1':spin_down}
