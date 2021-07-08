@@ -1,4 +1,4 @@
-FLAGS= -std=c++11 -g
+FLAGS= -std=c++11 -g -O2
 PETSC_ARCH = arch_linux_gnu_c_debug
 MYLIBS = ${SLEPC_LIB}/libslepc.so ${PETSC_LIB}/libpetsc.so ${MPI_DIR}/lib/libmpi.so
 INCLUDES = -I${SLEPC_INC} -I${PETSC_INC} -I${MPI_DIR}/include
@@ -28,8 +28,11 @@ loadmods:
 
 clean:
 	@echo Removing all object files and executables
-	rm sohg *.o dhogs
+	rm *.o dhogs *.dynamicmatrix
 	@echo Clean complete.
+
+m:
+	rm *.dynamicmatrix
 
 rebuild: rebuild_sub clean all
 	@echo Rebuild complete.
@@ -44,3 +47,5 @@ modules:
 	module load slepc/3.12.0
 	module load petsc/3.12.0
 
+matStoreTest:
+	@mpic++ $(FLAGS) fileSaveTest.cpp -o test $(INCLUDES) $(MYLIBS)

@@ -1,6 +1,6 @@
 #include "IsingHamiltonian.h"
 
-IsingHamiltonian::IsingHamiltonian(long latice_size){
+IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
     latice_size_one_dimension = latice_size;
     N = latice_size * latice_size;
     initializePauliMatrices();
@@ -11,22 +11,30 @@ IsingHamiltonian::IsingHamiltonian(long latice_size){
     std::ifstream bzfile(BzMatFileName);
     std::ifstream bxfile(BxMatFileName);
 
-    if(!jfile.good()){
+    if(!jfile.good() && which == 0){
         generateJMatrix();
-        std::cout << "Generated J" << std::endl;
-        JTerms.save(JMatFileName);
+        JTerms.savePetsc(JMatFileName);
+        JTerms.save(JMatFileName + "e");
     }
-    if(!bzfile.good()){
+    if(!bzfile.good() && which == 1){
         generateBzMatrix();
-        std::cout << "Generated Bz" << std::endl;
-        BzTerms.save(BzMatFileName);
+        BzTerms.savePetsc(BzMatFileName);
+        BzTerms.save(BzMatFileName + "e");
     }
-    if(!bxfile.good()){
+    if(!bxfile.good() && which == 2){
         generateBxMatrix();
-        std::cout << "Generated Bx" << std::endl;
-        BxTerms.save(BxMatFileName);
+        BxTerms.savePetsc(BxMatFileName);
+        BxTerms.save(BxMatFileName + "e");
+
+
     }
-    
+
+    jfile.close();
+    bzfile.close();
+    bxfile.close();
+
+
+
 }
 
 void IsingHamiltonian::initializePauliMatrices(){
@@ -46,10 +54,8 @@ void IsingHamiltonian::initializePauliMatrices(){
 DynamicMatrix IsingHamiltonian::generateSelfInteraction(char spin, long i){
     DynamicMatrix output(1, 1);
     output.set(0, 0, 1.0);
-    for (long x = 1; x < N+1; x++)
-    {
-        if (x == i)
-        {
+    for (long x = 1; x < N+1; x++){
+        if (x == i){
             if (spin == 'x')
                 output = output.tensor(SigmaXI);
             else
@@ -57,20 +63,15 @@ DynamicMatrix IsingHamiltonian::generateSelfInteraction(char spin, long i){
         }
         else
             output = output.tensor(I2);
-
     }
-    
     return output;
 }
 
 DynamicMatrix IsingHamiltonian::generateAdjacentInteractionZ(long i, long j){
     DynamicMatrix output(1, 1);
     output.set(0, 0, 1.0);
-    for (long x = 1; x < N+1; x++)
-    {
-        if (x == i)
-            output = output.tensor(SigmaZI);
-        else if(x == j)
+    for (long x = 1; x < N+1; x++){
+        if (x == i || x == j)
             output = output.tensor(SigmaZI);
         else
             output = output.tensor(I2);
@@ -85,8 +86,7 @@ void IsingHamiltonian::generateJMatrix(){
     }
     
     JTerms = DynamicMatrix(matrixDim, matrixDim);
-    for (long q = 1; q < N+1; q++)
-    {
+    for (long q = 1; q < N+1; q++){
         if (q + 1 < (N+1) && (q + 2) % latice_size_one_dimension != 0)          
             JTerms = JTerms + generateAdjacentInteractionZ(q, q+1);
         if (q + latice_size_one_dimension < (N+1))
@@ -97,14 +97,11 @@ void IsingHamiltonian::generateJMatrix(){
 void IsingHamiltonian::generateBxMatrix(){
     BxTerms = DynamicMatrix(1, 1);
     BxTerms.set(0, 0, 1.0);
-    for (long q = 1; q < N+1; q++)
-    {
+    for (long q = 1; q < N+1; q++){
         if (q == 1)
             BxTerms = generateSelfInteraction('x', q);
         else
-        {
             BxTerms = (BxTerms + generateSelfInteraction('x', q));
-        }
     }
 
 }
@@ -112,8 +109,7 @@ void IsingHamiltonian::generateBxMatrix(){
 void IsingHamiltonian::generateBzMatrix(){
     BzTerms = DynamicMatrix(1, 1);
     BzTerms.set(0, 0, 1.0);
-    for (long q = 1; q < N+1; q++)
-    {
+    for (long q = 1; q < N+1; q++){
         if (q == 1)
             BzTerms = generateSelfInteraction('z', q);
         else
@@ -123,10 +119,7 @@ void IsingHamiltonian::generateBzMatrix(){
 
 DynamicMatrix IsingHamiltonian::getHamiltonian(double J, double Bx, double Bz){
     DynamicMatrix Jmul = JTerms * J;
-
     DynamicMatrix Bxmul = BxTerms * (Bx * -1.0);
-
     DynamicMatrix Bzmul = BzTerms * (Bz * -1.0);
-
     return Jmul + Bxmul + Bzmul;
 }

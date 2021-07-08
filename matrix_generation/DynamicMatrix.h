@@ -1,9 +1,10 @@
 #pragma once
 #include<iostream>
-#include<map>
+#include<unordered_map>
 #include <iomanip>
 #include<sstream>
 #include<fstream>
+#include<vector>
 //A helper class for storing matrices, and getting them in a representation for MAGMA
 //Column-major calculation (j * rows) + i, sparse representation
 
@@ -18,6 +19,7 @@ class DynamicMatrix{
             cols = 1;
             rows = 1;
             set(0,0,1.0);
+            hasCheckedEndian = false;
         }
         void set(long i, long j, double d);
         double get(long i, long j) const;
@@ -41,10 +43,15 @@ class DynamicMatrix{
         }
 
         friend std::ostream& operator<<(std::ostream& os, const DynamicMatrix & matrix); 
-
+        void savePetsc(std::string filename);
+        void checkEndian();
+        void changeToBigEndian(char * c, int size);
+        void clean();
     private:
-        std::map<long, double> matrixEntries;
+        std::unordered_map<long, double> matrixEntries;
         long cols;
         long rows;
+        bool hasCheckedEndian;
+        bool bigEndian;
 
 };

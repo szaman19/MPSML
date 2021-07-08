@@ -21,9 +21,7 @@ class IsingHamiltonian{
     private:
 
         //Matrix storage, generated during initialization
-        DynamicMatrix JTerms;
-        DynamicMatrix BxTerms;
-        DynamicMatrix BzTerms;
+        
 
         //Pauli Matrix Storage
         DynamicMatrix SigmaXI;
@@ -34,8 +32,8 @@ class IsingHamiltonian{
         void initializePauliMatrices();
 
         //Helper functions for finding interactions
-        DynamicMatrix generateSelfInteraction(char, int);
-        DynamicMatrix generateAdjacentInteractionZ(int, int);
+        DynamicMatrix generateSelfInteraction(char, long);
+        DynamicMatrix generateAdjacentInteractionZ(long, long);
 
         //Functions for initializing JTerms, BxTrems
         void generateJMatrix();
@@ -43,12 +41,19 @@ class IsingHamiltonian{
         void generateBzMatrix();
 
         //N should always equal latice_size_one_dimension^2
-        int N;
-        int latice_size_one_dimension;
+        long N;
+        long latice_size_one_dimension;
 
     public:
-        IsingHamiltonian(int);
+        IsingHamiltonian(long, int);
         DynamicMatrix getHamiltonian(double, double, double);
+
+        DynamicMatrix JTerms;
+        DynamicMatrix BxTerms;
+        DynamicMatrix BzTerms;
+
+
+        
     
         
 

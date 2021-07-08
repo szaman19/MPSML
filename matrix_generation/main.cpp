@@ -6,41 +6,72 @@
 #include<slepceps.h>
 #include"petscsys.h"
 #include<fstream>
+#include <chrono>
+#include <thread>
 
 
 
 static char help[] = "Distributed Hamiltonian Object-Oriented Generator and Solver , by Andrew Grace.";
 
 bool loadMatrix(std::string filename, Mat * mat){
+    int numberOfNodes;
+    int thisNode;
+    MPI_Comm_rank(MPI_COMM_WORLD, &thisNode);
+    MPI_Comm_size(MPI_COMM_WORLD, &numberOfNodes);
+
     std::string line;
+    PetscPrintf(MPI_COMM_WORLD, "Got into loadMatrix\n");
     std::ifstream matfile(filename);
+    PetscPrintf(MPI_COMM_WORLD, "got file stream\n");
     if(matfile.is_open()){
         int rows, cols;
-        getline(matfile, line);
         std::stringstream ss(line);
-        ss >> rows;
-        getline(matfile, line);
-        ss.clear();
-        ss.str(line);
-        ss >> cols;
+        //Read it off with MPI
+        if(thisNode == 0){
+            ss.clear();
+            getline(matfile, line);
+            ss.str(line);
+            ss >> rows;
+            getline(matfile, line);
+            ss.clear();
+            ss.str(line);
+            ss >> cols;
+            
+        }
+        MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        
+
+        std::cout << rows << std::endl;
+        std::cout << cols << std::endl;
         MatCreate(PETSC_COMM_WORLD, mat);
         MatSetSizes(*mat, PETSC_DECIDE, PETSC_DECIDE, rows, cols);
         MatSetFromOptions(*mat);
         MatSetUp(*mat);
         MatZeroEntries(*mat);
 
-        while(getline(matfile, line)){
-            ss.clear();
-            ss.str(line);
-            std::string indexStr;
-            std::string valueStr;
-            ss >> indexStr;
-            ss >> valueStr;
-            int indexRaw = std::stoi(indexStr);
-            double value = std::stod(valueStr);
-            int extractedRow = indexRaw / cols;
-            int extractedColumn = indexRaw % cols;
+        while(getline(matfile, line) && !line.empty()){
+            int extractedRow;
+            int extractedColumn;
+            double value;
+            if(thisNode == 0){
+                ss.clear();
+                ss.str(line);
+                std::string indexStr;
+                std::string valueStr;
+                ss >> indexStr;
+                ss >> valueStr;
+                long indexRaw = std::stol(indexStr);
+                value = std::stod(valueStr);
+                extractedRow = indexRaw / cols;
+                extractedColumn = indexRaw % cols;
+            }
+            MPI_Bcast(&extractedRow, 1, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&extractedColumn, 1, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&value, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                
             MatSetValue(*mat, extractedRow, extractedColumn, value, INSERT_VALUES);
+            //PetscPrintf(MPI_COMM_WORLD, "Got %d, %d\n", extractedRow, extractedColumn);
         }
 
         matfile.close();
@@ -177,42 +208,79 @@ int main(int argc, char *argv[]){
         
 
         
+        MPI_Barrier(MPI_COMM_WORLD);
 
-
-        if(thisNode == 0 ){
-            //Generate the matrix on Node 0
+        if(thisNode < 3 ){
+            //Generate the matrix on Node 0, 1, and 2
             std::ifstream jfile(JMatFileName);
             std::ifstream bzfile(BzMatFileName);
             std::ifstream bxfile(BxMatFileName);
 
-            if(!jfile.good() || !bzfile.good() || !bxfile.good() || forceGenerate) {
-                if(verbose) std::cout << "Generating Matrices..." << std::endl;
-                IsingHamiltonian IH(lattice_size);       
-                if(verbose) std::cout << "Matrices Saved!" << std::endl;
+            bool dogen = !jfile.good() || !bzfile.good() || !bxfile.good() || forceGenerate;
+            jfile.close();
+            bzfile.close();
+            bxfile.close();
+            
+
+
+            if(dogen) {
+
+                for(int i = thisNode; i < 3; i += numberOfNodes){
+                    if(verbose) std::cout << "Generating Matrix " << i << std::endl;
+                    IsingHamiltonian IH(lattice_size,i);
+                
+                }
             }
+
+            
+            std::cout << thisNode << " finished" << std::endl;
+
         }
+
+        std::cout << thisNode << " made it to the barrier" << std::endl;
+
         MPI_Barrier(MPI_COMM_WORLD);
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "Loading J into PETSC\n");
-        bool success = loadMatrix(JMatFileName, &JPetsc);
-        if(!success){
-            PetscPrintf(MPI_COMM_WORLD, "Loading J failed. Terminating..\n");
-            SlepcFinalize();
-            return 1;
-        }
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "Loading Bz into PETSC\n");
-        success = loadMatrix(BzMatFileName, &BzPetsc);
-        if(!success){
-            PetscPrintf(MPI_COMM_WORLD, "Loading Bz failed. Terminating..\n");
-            SlepcFinalize();
-            return 1;
-        }
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "Loading Bx into PETSC\n");
-        success = loadMatrix(BxMatFileName, &BxPetsc);
-        if(!success){
-            PetscPrintf(MPI_COMM_WORLD, "Loading Bx failed. Terminating..\n");
-            SlepcFinalize();
-            return 1;
-        }
+
+
+        //wait until we can read the files
+
+            std::ifstream jtest;
+            jtest.open(JMatFileName);
+            while(!jtest.is_open()){
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                jtest.open(JMatFileName);
+            }
+            jtest.close();
+        
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        std::cout << thisNode << "waited until J was openable";
+
+        PetscViewer fd;   
+        PetscViewerBinaryOpen(PETSC_COMM_WORLD, JMatFileName.c_str() ,FILE_MODE_READ,&fd);
+        MatCreate(PETSC_COMM_WORLD, &JPetsc );
+        MatLoad(JPetsc, fd);
+        PetscViewerDestroy(&fd);
+
+
+        PetscViewer fd2;   
+        PetscViewerBinaryOpen(PETSC_COMM_WORLD, BxMatFileName.c_str() ,FILE_MODE_READ,&fd2);
+        MatCreate(PETSC_COMM_WORLD, &BxPetsc );
+        MatLoad(BxPetsc, fd2);
+        PetscViewerDestroy(&fd2);
+
+        PetscViewer fd3;   
+        PetscViewerBinaryOpen(PETSC_COMM_WORLD, BzMatFileName.c_str() ,FILE_MODE_READ,&fd3);
+        MatCreate(PETSC_COMM_WORLD, &BzPetsc );
+        MatLoad(BzPetsc, fd3);
+        PetscViewerDestroy(&fd3);
+
+
+
+
+
+
+
         if(verbose) PetscPrintf(MPI_COMM_WORLD, "We made it!\n");
     
         if(verbose) PetscPrintf(MPI_COMM_WORLD, "Setting up sum\n");
@@ -229,8 +297,8 @@ int main(int argc, char *argv[]){
         MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY);
 
         MatAYPX(Sum, J, JPetsc, DIFFERENT_NONZERO_PATTERN);
-        MatAYPX(Sum, Bx , BxPetsc, DIFFERENT_NONZERO_PATTERN);
-        MatAYPX(Sum, Bz , BzPetsc, DIFFERENT_NONZERO_PATTERN);
+        MatAYPX(Sum, -1.0 * Bx , BxPetsc, DIFFERENT_NONZERO_PATTERN);
+        MatAYPX(Sum, -1.0 * Bz , BzPetsc, DIFFERENT_NONZERO_PATTERN);
         if(verbose) PetscPrintf(MPI_COMM_WORLD, "Sum calculated.\n");
 
         if(verbose){
@@ -251,7 +319,7 @@ int main(int argc, char *argv[]){
 
         /* Set up SLEPC */
         EPS solver;
-        long nconv;
+        int nconv;
         /* Initialize vectors */
         MatCreateVecs(Sum, NULL, &imaginary);
         MatCreateVecs(Sum, NULL, &real);
@@ -271,8 +339,6 @@ int main(int argc, char *argv[]){
         PetscPrintf(MPI_COMM_WORLD, "Real Eigenvector:\n");
         VecView(real, PETSC_VIEWER_STDOUT_WORLD);
         PetscPrintf(MPI_COMM_WORLD, "Imaginary Eigenvector:\n ");
-        VecView(imaginary, PETSC_VIEWER_STDOUT_WORLD);
-        PetscPrintf(MPI_COMM_WORLD,"\n");
         VecDestroy(&imaginary);
         VecDestroy(&real);
         
