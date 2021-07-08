@@ -14,6 +14,7 @@
 #include <fstream>
 #include <string>
 #include <Eigen/Dense>
+#include <math.h>
 
 template<typename T>
 using DenseMatrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
