@@ -1,3 +1,3 @@
-[submodule "code/lib/eigen"]
-	path = code/lib/eigen
+[submodule "1D_Generator/eigen"]
+	path = 1D_Generator/eigen
 	url = https://gitlab.com/libeigen/eigen.git
