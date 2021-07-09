@@ -1,4 +1,5 @@
-#include<stdio>
+#pragma ONCE
+#include<iostream>
 #include<fstream>
 #include<istream>
 #include<ostream>
@@ -6,14 +7,19 @@
 
 /*  
 File Format:
-    - File Format version, integer
-    - Eigenvalue- double
+    - File Format version - integer
+    - Is Big Endian - integer
+    - Eigenvalue - double
     - Number of values in the vector - integer
     - Array of the values - doubles
 */
 
 class PETSCVectorLoader{
     public:
+
+        PETSCVectorLoader(){
+
+        }
 
         void readPETSC(std::string fileName){
             //PETSC File format
@@ -80,15 +86,21 @@ class PETSCVectorLoader{
             std::ofstream outputFile(fileName, std::ios::out | std::ios::binary );
             outputFile.write((char*) &format, sizeof(int));
             outputFile.write((char*) &isBigEndianInt, sizeof(int));
+            std::cout <<  "E = " << eigenvalue << std::endl;
 
-            outputFile.write((char*) &eigenvalue, sizeof(double));
-            outputFile.write((char*) &numRows, sizeof(double));
+            outputFile.write(reinterpret_cast<char*>(&eigenvalue), sizeof(double));
+            outputFile.write((char*) &numRows, sizeof(int));
             for(int i = 0; i < numRows; i++){
                 double temp = values[i];
-                outputFile.write((char*) temp, sizeof(double));
+                outputFile.write(reinterpret_cast<char*>(&temp), sizeof(double));
+                std::cout <<   temp << std::endl;
             }
 
             outputFile.close();
+        }
+
+        void setEigenval(double e){
+            eigenvalue = e;
         }
 
 
@@ -109,7 +121,7 @@ class PETSCVectorLoader{
         }
 
         void swapEndianness(char * c, int size, bool isInputBigEndian){
-            if(!this->hasCheckedEndian) this->detectEndianness();
+            if(!this->hasCheckedEndian) this->detectEndianess();
             if((isInputBigEndian && !this->isBigEndian) || (!isInputBigEndian && this->isBigEndian)){
                 for(int i = 0; i < size / 2; i++){
                     char temp = c[i];
@@ -121,11 +133,4 @@ class PETSCVectorLoader{
         }
 
 
-
-
-
-
-
-
-
-}
+};

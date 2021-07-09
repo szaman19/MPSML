@@ -1,3 +1,4 @@
+#pragma ONCE
 #include "DynamicMatrix.h"
 #include "IsingHamiltonian.h"
 #include<iostream>
@@ -8,81 +9,86 @@
 #include<fstream>
 #include <chrono>
 #include <thread>
+#include "vectorlib.cpp"
 
 
 
 static char help[] = "Distributed Hamiltonian Object-Oriented Generator and Solver , by Andrew Grace.";
 
-bool loadMatrix(std::string filename, Mat * mat){
-    int numberOfNodes;
+void performSolve(double JVal, double BxVal, double BzVal, Mat * JMat, Mat * BxMat, Mat * BzMat, bool verbose){
+    
+    int sizeX, sizeY;
+    Mat Sum;
+
+    MatGetSize(*JMat, &sizeX, &sizeY); 
+    MatCreate(PETSC_COMM_WORLD, &Sum);
+    MatSetSizes(Sum, PETSC_DECIDE, PETSC_DECIDE, sizeX, sizeY );
+    MatSetFromOptions(Sum);
+    MatSetUp(Sum);
+    MatZeroEntries(Sum);
+
+
+    MatAssemblyBegin(Sum, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY);    
+    MatAYPX(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN);
+    MatAYPX(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN);
+    MatAYPX(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN);
+    if(verbose) PetscPrintf(MPI_COMM_WORLD, "Sum calculated.\nCalculating lowest eigenpair...\n");   
+
+    /* Set up SLEPC */
+    Vec imaginary, real;
+    PetscScalar im, re;
+    EPS solver;
+    int nconv;
+
+    /* Initialize vectors */
+    MatCreateVecs(Sum, NULL, &imaginary);
+    MatCreateVecs(Sum, NULL, &real);    
+    EPSCreate(PETSC_COMM_WORLD, &solver);
+    EPSSetOperators(solver, Sum, NULL);
+    EPSSetProblemType(solver, EPS_NHEP);
+    EPSSetWhichEigenpairs(solver, EPS_SMALLEST_REAL);
+    EPSSetFromOptions(solver);
+    EPSSolve(solver);
+    EPSGetConverged(solver, &nconv);
+    EPSGetEigenpair(solver, 0, &re, &im, real, imaginary);
+    EPSDestroy(&solver);    
+    if(verbose) PetscPrintf(MPI_COMM_WORLD,"\033[0;32mDone!\n\033[0m");
+
+
+    /*
+        Real Eigenvalue - re
+        Real Eigenvector - real
+    */
+
+    std::string vectorFileName = "Eigenvector_" + std::to_string(sizeX) + ".petscvec";   
+    PetscViewer vectorSaver;
+    PetscViewerBinaryOpen(PETSC_COMM_WORLD,vectorFileName.c_str(),FILE_MODE_WRITE,&vectorSaver);
+    VecView(real, vectorSaver);
+    PetscViewerDestroy(&vectorSaver);   
+    VecDestroy(&imaginary);
+    VecDestroy(&real);
+    MatDestroy(&Sum);
+
+    /* Convert file to our format on node 0*/
+
     int thisNode;
     MPI_Comm_rank(MPI_COMM_WORLD, &thisNode);
-    MPI_Comm_size(MPI_COMM_WORLD, &numberOfNodes);
 
-    std::string line;
-    PetscPrintf(MPI_COMM_WORLD, "Got into loadMatrix\n");
-    std::ifstream matfile(filename);
-    PetscPrintf(MPI_COMM_WORLD, "got file stream\n");
-    if(matfile.is_open()){
-        int rows, cols;
-        std::stringstream ss(line);
-        //Read it off with MPI
-        if(thisNode == 0){
-            ss.clear();
-            getline(matfile, line);
-            ss.str(line);
-            ss >> rows;
-            getline(matfile, line);
-            ss.clear();
-            ss.str(line);
-            ss >> cols;
-            
-        }
-        MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        
-
-        std::cout << rows << std::endl;
-        std::cout << cols << std::endl;
-        MatCreate(PETSC_COMM_WORLD, mat);
-        MatSetSizes(*mat, PETSC_DECIDE, PETSC_DECIDE, rows, cols);
-        MatSetFromOptions(*mat);
-        MatSetUp(*mat);
-        MatZeroEntries(*mat);
-
-        while(getline(matfile, line) && !line.empty()){
-            int extractedRow;
-            int extractedColumn;
-            double value;
-            if(thisNode == 0){
-                ss.clear();
-                ss.str(line);
-                std::string indexStr;
-                std::string valueStr;
-                ss >> indexStr;
-                ss >> valueStr;
-                long indexRaw = std::stol(indexStr);
-                value = std::stod(valueStr);
-                extractedRow = indexRaw / cols;
-                extractedColumn = indexRaw % cols;
-            }
-            MPI_Bcast(&extractedRow, 1, MPI_INT, 0, MPI_COMM_WORLD);
-            MPI_Bcast(&extractedColumn, 1, MPI_INT, 0, MPI_COMM_WORLD);
-            MPI_Bcast(&value, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-                
-            MatSetValue(*mat, extractedRow, extractedColumn, value, INSERT_VALUES);
-            //PetscPrintf(MPI_COMM_WORLD, "Got %d, %d\n", extractedRow, extractedColumn);
-        }
-
-        matfile.close();
-
-        MatAssemblyBegin(*mat, MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(*mat, MAT_FINAL_ASSEMBLY);
-        return true;
+    if(thisNode == 0){
+        std::string finalVectorName = "J" + std::to_string(JVal) + "Bx" + std::to_string(BxVal) + "Bz" + std::to_string(BzVal) + ".eigenpair";
+        PETSCVectorLoader loader;
+        loader.readPETSC(vectorFileName);
+        loader.setEigenval(re);
+        loader.write(finalVectorName);
+        remove(vectorFileName.c_str()
+        );
     }
-    return false;
+
+    MPI_Barrier(MPI_COMM_WORLD);
 
 }
+
 
 
 
@@ -275,74 +281,8 @@ int main(int argc, char *argv[]){
         MatLoad(BzPetsc, fd3);
         PetscViewerDestroy(&fd3);
 
-
-
-
-
-
-
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "We made it!\n");
-    
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "Setting up sum\n");
+        performSolve(J, Bx, Bz, &JPetsc, &BxPetsc, &BzPetsc, verbose);
         
-        int sizeX, sizeY;
-        MatGetSize(JPetsc, &sizeX, &sizeY);
-
-        MatCreate(PETSC_COMM_WORLD, &Sum);
-        MatSetSizes(Sum, PETSC_DECIDE, PETSC_DECIDE, sizeX, sizeY );
-        MatSetFromOptions(Sum);
-        MatSetUp(Sum);
-        MatZeroEntries(Sum);
-        MatAssemblyBegin(Sum, MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY);
-
-        MatAYPX(Sum, J, JPetsc, DIFFERENT_NONZERO_PATTERN);
-        MatAYPX(Sum, -1.0 * Bx , BxPetsc, DIFFERENT_NONZERO_PATTERN);
-        MatAYPX(Sum, -1.0 * Bz , BzPetsc, DIFFERENT_NONZERO_PATTERN);
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "Sum calculated.\n");
-
-        if(verbose){
-                PetscPrintf(MPI_COMM_WORLD, "\nJ\n");
-                MatView(JPetsc, PETSC_VIEWER_STDOUT_WORLD);
-                PetscPrintf(MPI_COMM_WORLD, "\nBx\n");
-                MatView(BxPetsc, PETSC_VIEWER_STDOUT_WORLD);
-                PetscPrintf(MPI_COMM_WORLD, "\nBz\n");
-                MatView(BzPetsc, PETSC_VIEWER_STDOUT_WORLD);
-                PetscPrintf(MPI_COMM_WORLD, "\nCombined Matrix ( J + Bx + Bz ):\n");
-                MatView(Sum, PETSC_VIEWER_STDOUT_WORLD);
-            }
-
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "\nSetting up return vectors for eigenvalue calculation...\n" );
-        Vec imaginary, real;
-        PetscScalar im, re;
-        if(verbose) PetscPrintf(MPI_COMM_WORLD, "\033[0;32mDone!\n\033[0mCalculating lowest eigenpair...\n" );
-
-        /* Set up SLEPC */
-        EPS solver;
-        int nconv;
-        /* Initialize vectors */
-        MatCreateVecs(Sum, NULL, &imaginary);
-        MatCreateVecs(Sum, NULL, &real);
-
-        EPSCreate(PETSC_COMM_WORLD, &solver);
-        EPSSetOperators(solver, Sum, NULL);
-        EPSSetProblemType(solver, EPS_NHEP);
-        EPSSetWhichEigenpairs(solver, EPS_SMALLEST_REAL);
-        EPSSetFromOptions(solver);
-        EPSSolve(solver);
-        EPSGetConverged(solver, &nconv);
-        EPSGetEigenpair(solver, 0, &re, &im, real, imaginary);
-        EPSDestroy(&solver);
-
-        if(verbose) PetscPrintf(MPI_COMM_WORLD,"\033[0;32mDone!\n\033[0m");
-        PetscPrintf(MPI_COMM_WORLD,"Lowest Eigenvalues:\nReal portion: %f\nImaginary Portion: %f\n" , re, im);
-        PetscPrintf(MPI_COMM_WORLD, "Real Eigenvector:\n");
-        VecView(real, PETSC_VIEWER_STDOUT_WORLD);
-        PetscPrintf(MPI_COMM_WORLD, "Imaginary Eigenvector:\n ");
-        VecDestroy(&imaginary);
-        VecDestroy(&real);
-        
-        MatDestroy(&Sum);
         MatDestroy(&JPetsc);
         MatDestroy(&BxPetsc);
         MatDestroy(&BzPetsc);

@@ -28,11 +28,11 @@ loadmods:
 
 clean:
 	@echo Removing all object files and executables
-	rm *.o dhogs *.dynamicmatrix
+	rm *.o dhogs *.dynamicmatrix *.eigenpair *.info
 	@echo Clean complete.
 
 m:
-	rm *.dynamicmatrix
+	rm *.dynamicmatrix *.eigenpair *.info
 
 rebuild: rebuild_sub clean all
 	@echo Rebuild complete.
