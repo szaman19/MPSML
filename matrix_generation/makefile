@@ -1,20 +1,19 @@
 FLAGS= -std=c++11 -g -O2
-PETSC_ARCH = arch_linux_gnu_c_debug
-MYLIBS = ${SLEPC_LIB}/libslepc.so ${PETSC_LIB}/libpetsc.so ${MPI_DIR}/lib/libmpi.so
-INCLUDES = -I${SLEPC_INC} -I${PETSC_INC} -I${MPI_DIR}/include
+MYLIBS = ${SLEPC_DIR}/${PETSC_ARCH}/lib/libslepc.so ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so 
+INCLUDES = -I${SLEPC_DIR}/include -I${SLEPC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/include
 SHELL:=/bin/bash
 
 all: dhogs
 
 dhogs: msg_start DynamicMatrix.o IsingHamiltonian.o main.cpp
-	@mpic++ $(FLAGS) DynamicMatrix.o IsingHamiltonian.o main.cpp -o dhogs $(INCLUDES) $(MYLIBS)
+	mpic++ $(FLAGS) DynamicMatrix.o IsingHamiltonian.o main.cpp -o dhogs $(INCLUDES) $(MYLIBS)
 	@echo Finished Compilation.
 
 DynamicMatrix.o: DynamicMatrix.h DynamicMatrix.cpp
-	@mpic++ $(FLAGS) DynamicMatrix.cpp -c $(INCLUDES) $(MYLIBS) 
+	@mpic++ $(FLAGS) DynamicMatrix.cpp -c $(INCLUDES) $(MYLIBS)
 
 IsingHamiltonian.o: IsingHamiltonian.h IsingHamiltonian.cpp
-	@mpic++ $(FLAGS) IsingHamiltonian.cpp -c $(INCLUDES) $(MYLIBS) 
+	@mpic++ $(FLAGS) IsingHamiltonian.cpp -c $(INCLUDES) $(MYLIBS)
 
 msg_start:
 	@echo
@@ -22,17 +21,17 @@ msg_start:
 
 loadmods:
 	module load gnu8/8.3.0
-	module load openmpi3/3.1.4
+	module load openmpi3/3.1.
 	module load petsc/3.12.0
 	module load slepc/3.12.0
 
 clean:
 	@echo Removing all object files and executables
-	rm *.o dhogs *.dynamicmatrix *.eigenpair *.info
+	rm *.o dhogs *.dynamicmatrix
 	@echo Clean complete.
 
 m:
-	rm *.dynamicmatrix *.eigenpair *.info
+	rm *.dynamicmatrix
 
 rebuild: rebuild_sub clean all
 	@echo Rebuild complete.
