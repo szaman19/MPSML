@@ -86,14 +86,14 @@ class PETSCVectorLoader{
             std::ofstream outputFile(fileName, std::ios::out | std::ios::binary );
             outputFile.write((char*) &format, sizeof(int));
             outputFile.write((char*) &isBigEndianInt, sizeof(int));
-            std::cout <<  "E = " << eigenvalue << std::endl;
+            
 
             outputFile.write(reinterpret_cast<char*>(&eigenvalue), sizeof(double));
             outputFile.write((char*) &numRows, sizeof(int));
             for(int i = 0; i < numRows; i++){
                 double temp = values[i];
                 outputFile.write(reinterpret_cast<char*>(&temp), sizeof(double));
-                std::cout <<   temp << std::endl;
+ 
             }
 
             outputFile.close();

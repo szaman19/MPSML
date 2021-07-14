@@ -17,12 +17,12 @@ IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
         //JTerms.save(JMatFileName + "e");
     }
     if(!bzfile.good() && which == 1){
-        generateBzMatrix();
+        generateBzMatrixExperimental();
         BzTerms.savePetsc(BzMatFileName);
         //BzTerms.save(BzMatFileName + "e");
     }
     if(!bxfile.good() && which == 2){
-        generateBxMatrix();
+        generateBxMatrixExperimental();
         BxTerms.savePetsc(BxMatFileName);
         //BxTerms.save(BxMatFileName + "e");
 
