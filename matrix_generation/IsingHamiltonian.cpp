@@ -57,12 +57,12 @@ DynamicMatrix IsingHamiltonian::generateSelfInteraction(char spin, long i){
     for (long x = 1; x < N+1; x++){
         if (x == i){
             if (spin == 'x')
-                output = output.tensor(SigmaXI);
+                output.tensorInPlace(SigmaXI);
             else
-                output = output.tensor(SigmaZI);
+                output.tensorInPlace(SigmaZI);
         }
         else
-            output = output.tensor(I2);
+            output.tensorInPlace(I2);
     }
     return output;
 }
@@ -72,9 +72,9 @@ DynamicMatrix IsingHamiltonian::generateAdjacentInteractionZ(long i, long j){
     output.set(0, 0, 1.0);
     for (long x = 1; x < N+1; x++){
         if (x == i || x == j)
-            output = output.tensor(SigmaZI);
+            output.tensorInPlace(SigmaZI);
         else
-            output = output.tensor(I2);
+            output.tensorInPlace(I2);
     }
     return output;
 }
@@ -88,9 +88,9 @@ void IsingHamiltonian::generateJMatrix(){
     JTerms = DynamicMatrix(matrixDim, matrixDim);
     for (long q = 1; q < N+1; q++){
         if (q + 1 < (N+1) && (q + 2) % latice_size_one_dimension != 0)          
-            JTerms = JTerms + generateAdjacentInteractionZ(q, q+1);
+            JTerms.addInPlace(generateAdjacentInteractionZ(q, q+1));
         if (q + latice_size_one_dimension < (N+1))
-            JTerms = JTerms + generateAdjacentInteractionZ(q, q + latice_size_one_dimension);
+            JTerms.addInPlace(generateAdjacentInteractionZ(q, q + latice_size_one_dimension));
     }
 }
 
@@ -101,7 +101,7 @@ void IsingHamiltonian::generateBxMatrix(){
         if (q == 1)
             BxTerms = generateSelfInteraction('x', q);
         else
-            BxTerms = (BxTerms + generateSelfInteraction('x', q));
+            BxTerms.addInPlace(generateSelfInteraction('x', q));
     }
 
 }
@@ -113,7 +113,7 @@ void IsingHamiltonian::generateBzMatrix(){
         if (q == 1)
             BzTerms = generateSelfInteraction('z', q);
         else
-            BzTerms = BzTerms + generateSelfInteraction('z', q);
+            BzTerms.addInPlace(generateSelfInteraction('z', q));
     }
 }
 

@@ -95,8 +95,20 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat * JMat, Mat * BxM
 int main(int argc, char *argv[]){
 
     
+    int argcCopy = argc + 1;
+    std::vector<std::string> argCopy;
+    for(int i = 1; i < argc; i++){
+        argCopy.push_back(std::string(argv[i]));
+    }
+    argCopy.push_back("-log_view");
+    std::vector<char*> argPointers;
+    argPointers.reserve(argCopy.size());
+    for(int i = 0; i < argCopy.size(); i++)
+        argPointers.push_back(const_cast<char*> (argCopy[i].c_str()));
 
-    SlepcInitialize( &argc, &argv, (char*) 0, help);
+
+
+    SlepcInitialize( &argcCopy, &argPointers[0], (char*) 0, help);
     
 
     /*  Before we bother with SLEPc, we should get arguments

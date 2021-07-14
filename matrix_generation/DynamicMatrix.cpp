@@ -98,6 +98,33 @@ DynamicMatrix DynamicMatrix::operator+(const DynamicMatrix& other){
     return output;
 
 }
+void DynamicMatrix::addInPlace( DynamicMatrix& other){
+    if(other.rows == this->rows && other.cols == this->cols){
+       for(auto const& ome : other.matrixEntries){
+            double existing = 0.0;
+            if(this->matrixEntries.find(ome.first) != this->matrixEntries.end()){
+                existing = this->matrixEntries[ome.first];
+            }
+            this->matrixEntries[ome.first] = existing + ome.second;
+       }
+    }
+
+}
+void DynamicMatrix::addInPlace( DynamicMatrix other){
+    if(other.rows == this->rows && other.cols == this->cols){
+       for(auto const& ome : other.matrixEntries){
+            double existing = 0.0;
+            if(this->matrixEntries.find(ome.first) != this->matrixEntries.end()){
+                existing = this->matrixEntries[ome.first];
+            }
+            this->matrixEntries[ome.first] = existing + ome.second;
+       }
+    }
+
+}
+
+
+
 DynamicMatrix DynamicMatrix::operator-(const DynamicMatrix& other){
     DynamicMatrix out(this->rows, this->cols);
     if(other.rows == this->rows && other.cols == this->cols){
@@ -144,6 +171,27 @@ DynamicMatrix DynamicMatrix::tensor(DynamicMatrix & other){
         }
     }
     return output;
+}
+
+void DynamicMatrix::tensorInPlace( DynamicMatrix & other){
+    long newRow = this->rows * other.rows;
+    long newCol = this->cols * other.cols;
+    std::unordered_map<long,double> copyOfMatEntries(this->matrixEntries);
+    this->matrixEntries.clear();
+    for(auto const& thismatentry : copyOfMatEntries){
+        //Decode location of this block
+        long startx = thismatentry.first / this->cols;
+        long starty = thismatentry.first % this->cols;
+        startx *= other.rows;
+        starty *= other.cols;
+        for(auto const &othermatentry : other.matrixEntries){
+            long localx = othermatentry.first / other.cols;
+            long localy = othermatentry.first % other.cols;
+            this->set(startx + localx, starty + localy, othermatentry.second * thismatentry.second);
+        }
+    }
+    this->rows = newRow;
+    this->cols = newCol;
 }
 
 std::ostream& operator<<(std::ostream& os, const DynamicMatrix& matrix){
