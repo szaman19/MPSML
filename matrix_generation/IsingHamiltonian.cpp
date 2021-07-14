@@ -67,6 +67,40 @@ DynamicMatrix IsingHamiltonian::generateSelfInteraction(char spin, long i){
     return output;
 }
 
+void IsingHamiltonian::generateBxMatrixExperimental(){
+    BxTerms = DynamicMatrix(1,1);
+    for(long i = 1; i < N+1; i++ ){
+        DynamicMatrix temp(1,1);
+        temp.set(0,0,1.0);
+        //generateSelfInteraction(z,i)
+        for(long x = 1; x < N+1; x++){
+            if(x == i) temp.tensorInPlace(SigmaXI);
+            else temp.tensorInPlace(I2);
+        }
+        if(i == 1) BxTerms = temp;
+        else BxTerms.addInPlaceRef(temp);
+        BxTerms.clean();
+    }
+
+}
+
+void IsingHamiltonian::generateBzMatrixExperimental(){
+    BzTerms = DynamicMatrix(1,1);
+    for(long i = 1; i < N+1; i++ ){
+        DynamicMatrix temp(1,1);
+        temp.set(0,0,1.0);
+        //generateSelfInteraction(z,i)
+        for(long x = 1; x < N+1; x++){
+            if(x == i) temp.tensorInPlace(SigmaZI);
+            else temp.tensorInPlace(I2);
+        }
+        if(i == 1) BzTerms = temp;
+        else BzTerms.addInPlaceRef(temp);
+        BzTerms.clean();
+    }
+
+}
+
 DynamicMatrix IsingHamiltonian::generateAdjacentInteractionZ(long i, long j){
     DynamicMatrix output(1, 1);
     output.set(0, 0, 1.0);

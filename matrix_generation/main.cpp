@@ -95,20 +95,8 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat * JMat, Mat * BxM
 int main(int argc, char *argv[]){
 
     
-    int argcCopy = argc + 1;
-    std::vector<std::string> argCopy;
-    for(int i = 1; i < argc; i++){
-        argCopy.push_back(std::string(argv[i]));
-    }
-    argCopy.push_back("-log_view");
-    std::vector<char*> argPointers;
-    argPointers.reserve(argCopy.size());
-    for(int i = 0; i < argCopy.size(); i++)
-        argPointers.push_back(const_cast<char*> (argCopy[i].c_str()));
 
-
-
-    SlepcInitialize( &argcCopy, &argPointers[0], (char*) 0, help);
+    SlepcInitialize( &argc, &argv, (char*) 0, help);
     
 
     /*  Before we bother with SLEPc, we should get arguments
@@ -116,11 +104,12 @@ int main(int argc, char *argv[]){
         Argument 2: J
         Argument 3: Bx
         Argument 4: Bz
-        Argument 5 and 6: 
+        Argument 5 and 6: --verbose or forcegen
+        Others: just for PETSC
     */
 
-    if(argc < 5 || argc > 7){
-        PetscPrintf(MPI_COMM_WORLD, "This program requires 5 - 7 arguments.\n");
+    if(argc < 5){
+        PetscPrintf(MPI_COMM_WORLD, "This program requires at least 5 arguments\n");
         PetscPrintf(MPI_COMM_WORLD, "Usage: ./sohg <Lattice Size in 1D> <J multiplier> <Bx Multiplier> <Bz Multiplier> <--save-file or --force-gen>\n");
         PetscPrintf(MPI_COMM_WORLD, "Please try again.\n");
         SlepcFinalize();

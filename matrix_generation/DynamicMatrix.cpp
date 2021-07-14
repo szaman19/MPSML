@@ -98,7 +98,7 @@ DynamicMatrix DynamicMatrix::operator+(const DynamicMatrix& other){
     return output;
 
 }
-void DynamicMatrix::addInPlace( DynamicMatrix& other){
+void DynamicMatrix::addInPlaceRef( DynamicMatrix& other){
     if(other.rows == this->rows && other.cols == this->cols){
        for(auto const& ome : other.matrixEntries){
             double existing = 0.0;
@@ -109,6 +109,10 @@ void DynamicMatrix::addInPlace( DynamicMatrix& other){
        }
     }
 
+}
+
+void DynamicMatrix::reserve(long numValues){
+    this->matrixEntries.reserve(numValues);
 }
 void DynamicMatrix::addInPlace( DynamicMatrix other){
     if(other.rows == this->rows && other.cols == this->cols){

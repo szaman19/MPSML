@@ -25,8 +25,10 @@ class DynamicMatrix{
         double get(long i, long j) const;
         bool isNotSparse(long i, long j) const;
         void tensorInPlace( DynamicMatrix& other );
-        void addInPlace(DynamicMatrix& other );
+        void addInPlaceRef(DynamicMatrix& other );
         void addInPlace(DynamicMatrix other );
+
+        void reserve(long numberValues);
         //Tensor Product
         DynamicMatrix  tensor(DynamicMatrix & other);
         DynamicMatrix operator*(double d);

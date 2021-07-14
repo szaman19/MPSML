@@ -39,6 +39,8 @@ class IsingHamiltonian{
         void generateJMatrix();
         void generateBxMatrix();
         void generateBzMatrix();
+        void generateBzMatrixExperimental();
+        void generateBxMatrixExperimental();
 
         //N should always equal latice_size_one_dimension^2
         long N;
