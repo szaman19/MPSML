@@ -46,7 +46,7 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat * JMat, Mat * BxM
     MatCreateVecs(Sum, NULL, &real);    
     EPSCreate(PETSC_COMM_WORLD, &solver);
     EPSSetOperators(solver, Sum, NULL);
-    EPSSetProblemType(solver, EPS_NHEP);
+    EPSSetProblemType(solver, EPS_HEP);
     EPSSetWhichEigenpairs(solver, EPS_SMALLEST_REAL);
     EPSSetFromOptions(solver);
     EPSSolve(solver);
