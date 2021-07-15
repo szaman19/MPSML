@@ -24,6 +24,7 @@ IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
     if(!bxfile.good() && which == 2){
         generateBxMatrixExperimental();
         BxTerms.savePetsc(BxMatFileName);
+        //std::cout << BxTerms.printLatex();
         //BxTerms.save(BxMatFileName + "e");
 
 
@@ -68,24 +69,50 @@ DynamicMatrix IsingHamiltonian::generateSelfInteraction(char spin, long i){
 }
 
 void IsingHamiltonian::generateBxMatrixExperimental(){
-    BxTerms = DynamicMatrix(1,1);
-    for(long i = 1; i < N+1; i++ ){
-        DynamicMatrix temp(1,1);
-        temp.set(0,0,1.0);
-        //generateSelfInteraction(z,i)
-        for(long x = 1; x < N+1; x++){
-            if(x == i) temp.tensorInPlace(SigmaXI);
-            else temp.tensorInPlace(I2);
-        }
-        if(i == 1) BxTerms = temp;
-        else BxTerms.addInPlaceRef(temp);
-        BxTerms.clean();
+    //Note
+    //Row 0 of Bx: 1 only when column is a power of 2, including 1
+    //Col 0 of Bx: 1 only when row is power of 2, including 1
+    //0 along diagonal
+    //From Row 0: 1 along diagonal where column is 1. There are as many ones as the column number. Then there are that many zeros
+    long matrixDim = 1;
+    for(long i = 0; i < N; i++){
+        matrixDim = 2 * matrixDim;
+    }
+    
+    BxTerms = DynamicMatrix(matrixDim,matrixDim);
+    std::vector<long> powersOfTwo;
+    long startPoint = 1;
+    while(matrixDim % startPoint == 0){
+        powersOfTwo.push_back(startPoint);
+        startPoint *= 2;
     }
 
+    //Generate the upper half of the matrix
+    for(long i = 0; i < powersOfTwo.size();i++){
+        long currentPowerOfTwo = powersOfTwo[i];
+        bool oneMode = true;
+        long subCount = 0;
+        for(long currentRow = 0; currentRow < matrixDim && currentRow + currentPowerOfTwo < matrixDim; currentRow++){
+            
+            if(oneMode){
+                BxTerms.set(currentRow, currentRow + currentPowerOfTwo, 1.0);
+                BxTerms.set(currentRow + currentPowerOfTwo, currentRow, 1.0);
+            }
+            subCount++;
+            if(subCount == currentPowerOfTwo ){
+                oneMode = !oneMode;
+                subCount = 0;
+            }
+        }
+    }
 }
 
 void IsingHamiltonian::generateBzMatrixExperimental(){
     BzTerms = DynamicMatrix(1,1);
+
+    //Note
+    //We're only going to hit tensorInPlace(SigmaZI) when i == x
+
     for(long i = 1; i < N+1; i++ ){
         DynamicMatrix temp(1,1);
         temp.set(0,0,1.0);
@@ -97,7 +124,10 @@ void IsingHamiltonian::generateBzMatrixExperimental(){
         if(i == 1) BzTerms = temp;
         else BzTerms.addInPlaceRef(temp);
         BzTerms.clean();
+        
     }
+
+    
 
 }
 

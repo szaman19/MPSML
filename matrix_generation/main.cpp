@@ -60,7 +60,7 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat * JMat, Mat * BxM
         Real Eigenvalue - re
         Real Eigenvector - real
     */
-
+    PetscPrintf(MPI_COMM_WORLD, "%f\n", re);
     std::string vectorFileName = "Eigenvector_" + std::to_string(sizeX) + ".petscvec";   
     PetscViewer vectorSaver;
     PetscViewerBinaryOpen(PETSC_COMM_WORLD,vectorFileName.c_str(),FILE_MODE_WRITE,&vectorSaver);
