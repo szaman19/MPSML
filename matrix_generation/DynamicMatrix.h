@@ -49,8 +49,9 @@ class DynamicMatrix{
 
         friend std::ostream& operator<<(std::ostream& os, const DynamicMatrix & matrix); 
         void savePetsc(std::string filename);
+        void saveEigen(std::string filename);
         void checkEndian();
-        void changeToBigEndian(char * c, int size);
+        inline void changeToBigEndian(char * c, int size);
         void clean();
     private:
         std::unordered_map<long, double> matrixEntries;

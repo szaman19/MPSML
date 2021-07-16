@@ -1,4 +1,6 @@
 #include "IsingHamiltonian.h"
+#include <chrono>
+#include<iostream>
 
 IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
     latice_size_one_dimension = latice_size;
@@ -17,6 +19,7 @@ IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
         //JTerms.save(JMatFileName + "e");
     }
     if(!bzfile.good() && which == 1){
+        //generateBzMatrix();
         generateBzMatrixExperimental();
         BzTerms.savePetsc(BzMatFileName);
         //BzTerms.save(BzMatFileName + "e");
@@ -80,20 +83,19 @@ void IsingHamiltonian::generateBxMatrixExperimental(){
     }
     
     BxTerms = DynamicMatrix(matrixDim,matrixDim);
-    std::vector<long> powersOfTwo;
-    long startPoint = 1;
-    while(matrixDim % startPoint == 0){
-        powersOfTwo.push_back(startPoint);
-        startPoint *= 2;
-    }
 
-    //Generate the upper half of the matrix
-    for(long i = 0; i < powersOfTwo.size();i++){
-        long currentPowerOfTwo = powersOfTwo[i];
+    //Calculate nonzeros required
+    long nonzeros = N * matrixDim;
+    BxTerms.reserve(nonzeros);
+
+
+    long startPoint = 1;
+    auto begin = std::chrono::high_resolution_clock::now();
+    for(long i = 1; i < matrixDim ;i *= 2){
+        long currentPowerOfTwo = i;
         bool oneMode = true;
         long subCount = 0;
         for(long currentRow = 0; currentRow < matrixDim && currentRow + currentPowerOfTwo < matrixDim; currentRow++){
-            
             if(oneMode){
                 BxTerms.set(currentRow, currentRow + currentPowerOfTwo, 1.0);
                 BxTerms.set(currentRow + currentPowerOfTwo, currentRow, 1.0);
@@ -105,6 +107,10 @@ void IsingHamiltonian::generateBxMatrixExperimental(){
             }
         }
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - begin);
+    std::cout << "Bx: " << duration.count() << " seconds." << std::endl;
+
 }
 
 void IsingHamiltonian::generateBzMatrixExperimental(){
