@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --nodelist=c5
 #SBATCH --job-name=Hamiltonian_Solver_agrace
 #SBATCH --mail-type=END        # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=agrace2@binghamton.edu
@@ -9,8 +10,8 @@
 #SBATCH --ntasks-per-node=3      # Maximum number of tasks on each node
 #SBATCH --ntasks-per-socket=3      # Maximum number of tasks on each socket
 #SBATCH --distribution=cyclic:cyclic # Distribute tasks cyclically first among nodes and then among sockets within a node
-#SBATCH --mem-per-cpu=1024mb          # Memory (i.e. RAM) per processor
-#SBATCH --time=00:05:00              # Wall time limit (days-hrs:min:sec)
+#SBATCH --mem-per-cpu=4096mb          # Memory (i.e. RAM) per processor
+#SBATCH --time=12:00:00              # Wall time limit (days-hrs:min:sec)
 #SBATCH --output=slurm_logs/mpi_test_%j.log     # Path to the standard output and error files relative to the working directory
 
 echo "Date              = $(date)"
@@ -22,4 +23,4 @@ echo "Number of Tasks Allocated      = $SLURM_NTASKS"
 echo "Number of Cores/Task Allocated = $SLURM_CPUS_PER_TASK"
 
 
-mpirun dhogs 4 1 1 1 -log_view
+mpirun dhogs 2 1 1 1 --verbose

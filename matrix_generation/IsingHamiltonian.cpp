@@ -19,15 +19,19 @@ IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
         //JTerms.save(JMatFileName + "e");
     }
     if(!bzfile.good() && which == 1){
-        //generateBzMatrix();
-        generateBzMatrixExperimental();
+        generateBzMatrix();
+        //generateBzMatrixExperimental();
         BzTerms.savePetsc(BzMatFileName);
+        std::cout << "bz:" <<std::endl;
+        std::cout << BzTerms.printLatex() << std::endl;
         //BzTerms.save(BzMatFileName + "e");
     }
     if(!bxfile.good() && which == 2){
-        generateBxMatrixExperimental();
+        //generateBxMatrixExperimental();
+        generateBxMatrix();
+         std::cout << "bx:" <<std::endl;
         BxTerms.savePetsc(BxMatFileName);
-        //std::cout << BxTerms.printLatex();
+        std::cout << BxTerms.printLatex();
         //BxTerms.save(BxMatFileName + "e");
 
 

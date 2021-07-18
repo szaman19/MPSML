@@ -186,14 +186,16 @@ DynamicMatrix DynamicMatrix::tensor(DynamicMatrix & other){
 }
 
 void DynamicMatrix::tensorInPlace( DynamicMatrix & other){
-    long newRow = this->rows * other.rows;
-    long newCol = this->cols * other.cols;
+    long oldRow = this->rows;
+    long oldCol = this->cols;
+    this->rows = this->rows * other.rows;
+    this->cols = this->cols * other.cols;
     std::unordered_map<long,double> copyOfMatEntries(this->matrixEntries);
     this->matrixEntries.clear();
     for(auto const& thismatentry : copyOfMatEntries){
         //Decode location of this block
-        long startx = thismatentry.first / this->cols;
-        long starty = thismatentry.first % this->cols;
+        long startx = thismatentry.first / oldCol;
+        long starty = thismatentry.first % oldCol;
         startx *= other.rows;
         starty *= other.cols;
         for(auto const &othermatentry : other.matrixEntries){
@@ -202,8 +204,6 @@ void DynamicMatrix::tensorInPlace( DynamicMatrix & other){
             this->set(startx + localx, starty + localy, othermatentry.second * thismatentry.second);
         }
     }
-    this->rows = newRow;
-    this->cols = newCol;
 }
 
 std::ostream& operator<<(std::ostream& os, const DynamicMatrix& matrix){
