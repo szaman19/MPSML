@@ -23,4 +23,4 @@ echo "Number of Tasks Allocated      = $SLURM_NTASKS"
 echo "Number of Cores/Task Allocated = $SLURM_CPUS_PER_TASK"
 
 
-mpirun dhogs 2 1 1 1 --verbose
+mpirun dhogs 5 1 1 1 --verbose

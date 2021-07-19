@@ -3,10 +3,10 @@ MYLIBS = ${SLEPC_DIR}/${PETSC_ARCH}/lib/libslepc.so ${PETSC_DIR}/${PETSC_ARCH}/l
 INCLUDES = -I${SLEPC_DIR}/include -I${SLEPC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/include
 SHELL:=/bin/bash
 
-all: dhogs
+all: matgen
 
-dhogs: msg_start DynamicMatrix.o IsingHamiltonian.o main.cpp
-	mpic++ $(FLAGS) DynamicMatrix.o IsingHamiltonian.o main.cpp -o dhogs $(INCLUDES) $(MYLIBS)
+matgen: msg_start DynamicMatrix.o IsingHamiltonian.o main.cpp
+	mpic++ $(FLAGS) DynamicMatrix.o IsingHamiltonian.o main.cpp -o matgen $(INCLUDES) $(MYLIBS)
 	@echo Finished Compilation.
 
 DynamicMatrix.o: DynamicMatrix.h DynamicMatrix.cpp
@@ -27,11 +27,11 @@ loadmods:
 
 clean:
 	@echo Removing all object files and executables
-	rm *.o dhogs *.dynamicmatrix
+	rm *.o matgen *.dynamicmatrix *.eigenpair *.petscvec.info
 	@echo Clean complete.
 
 m:
-	rm *.dynamicmatrix
+	rm *.dynamicmatrix *.eigenpair *.petscvec.info
 
 rebuild: rebuild_sub clean all
 	@echo Rebuild complete.

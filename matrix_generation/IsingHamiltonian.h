@@ -34,13 +34,16 @@ class IsingHamiltonian{
         //Helper functions for finding interactions
         DynamicMatrix generateSelfInteraction(char, long);
         DynamicMatrix generateAdjacentInteractionZ(long, long);
+        void generateAdjacentBeta(long matDim, long i, long j, std::vector<double> &toAdd);
 
         //Functions for initializing JTerms, BxTrems
         void generateJMatrix();
         void generateBxMatrix();
         void generateBzMatrix();
+        void generateJMatrixExperimental();
         void generateBzMatrixExperimental();
         void generateBxMatrixExperimental();
+        std::vector<double> generateBzPattern(int level, double input);
 
         //N should always equal latice_size_one_dimension^2
         long N;
@@ -48,6 +51,7 @@ class IsingHamiltonian{
 
     public:
         IsingHamiltonian(long, int);
+        IsingHamiltonian(long, int, bool);
         DynamicMatrix getHamiltonian(double, double, double);
 
         DynamicMatrix JTerms;
