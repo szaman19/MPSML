@@ -108,7 +108,7 @@ IsingHamiltonian::IsingHamiltonian(long latice_size, int which, bool sv){
     bxfile.close();
 
 
-
+}
 
 
 

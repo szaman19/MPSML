@@ -296,13 +296,16 @@ int main(int argc, char *argv[]){
         if(thisNode == 0) {
             std::cout << "Time til all values loaded: " << loadE.count() << std::endl;
         }
+        auto solveBegin = std::chrono::system_clock::now();
 
         performSolve(J, Bx, Bz, &JPetsc, &BxPetsc, &BzPetsc, verbose);
 
         auto endSolve = std::chrono::system_clock::now();
         auto solveE = std::chrono::duration_cast<std::chrono::seconds>(endSolve - start);
         if(thisNode == 0) {
+            auto solveEnd2 = std::chrono::duration_cast<std::chrono::seconds>(endSolve - solveBegin);
             std::cout << "Time til solve complete: " << solveE.count() << std::endl;
+            std::cout << "Solve time: " << solveEnd2.count() << std::endl;
         }
         
         MatDestroy(&JPetsc);
