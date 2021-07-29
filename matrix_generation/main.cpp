@@ -303,9 +303,9 @@ int main(int argc, char *argv[]){
         auto endSolve = std::chrono::system_clock::now();
         auto solveE = std::chrono::duration_cast<std::chrono::seconds>(endSolve - start);
         if(thisNode == 0) {
-            auto solveEnd2 = std::chrono::duration_cast<std::chrono::seconds>(endSolve - solveBegin);
+            auto solveEnd2 = std::chrono::duration_cast<std::chrono::milliseconds>(endSolve - solveBegin);
             std::cout << "Time til solve complete: " << solveE.count() << std::endl;
-            std::cout << "Solve time: " << solveEnd2.count() << std::endl;
+            std::cout << "Solve time: " << solveEnd2.count() << " milliseconds." << std::endl;
         }
         
         MatDestroy(&JPetsc);

@@ -18,10 +18,10 @@
 echo "Date              = $(date)"
 echo "Hostname          = $(hostname -s)"
 echo "Working Directory = $(pwd)"
-echo ""T
+echo ""
 echo "Number of Nodes Allocated      = $SLURM_JOB_NUM_NODES"
 echo "Number of Tasks Allocated      = $SLURM_NTASKS"
 echo "Number of Cores/Task Allocated = $SLURM_CPUS_PER_TASK"
 
 
-mpirun matgen 5 1 1 1 --verbose
+srun ./matgen 5 1 1 1 --verbose

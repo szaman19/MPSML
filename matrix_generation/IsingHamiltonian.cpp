@@ -200,6 +200,7 @@ void IsingHamiltonian::generateBzMatrixExperimental(){
 
 
     for(int i = 0; i < diagonals.size(); i++){
+        if(diagonals[i] != 0.0)
         BzTerms.set(i,i,diagonals[i]);
     }
 
@@ -317,6 +318,7 @@ void IsingHamiltonian::generateJMatrixExperimental(){
 
     //Write the diagonal to JTerms
     for(long i = 0; i < matrixDim && i < diagonal.size(); i++){
+        if(diagonal[i] != 0.0)
         JTerms.set(i,i,diagonal[i]);
     }
 

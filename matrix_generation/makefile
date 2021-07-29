@@ -1,6 +1,6 @@
 FLAGS= -std=c++11 -g -O2
 MYLIBS = ${SLEPC_DIR}/${PETSC_ARCH}/lib/libslepc.so ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so 
-INCLUDES = -I${SLEPC_DIR}/include -I${SLEPC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/include
+INCLUDES = -I${SLEPC_DIR}/${PETSC_ARCH}/include -I${SLEPC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/include
 SHELL:=/bin/bash
 
 all: matgen

@@ -243,7 +243,8 @@ void DynamicMatrix::savePetsc(std::string filename){
     int numRows = this->rows;
     int numCols = this->cols;
 
-    int numNonzero =  matrixEntries.size();
+    //int numNonzero =  matrixEntries.size();
+    int numNonZero2 = 0;
     
     std::vector<int> nonZerosPerRow;
     std::cout << "attempting to allocate " << this->rows << "integers";
@@ -280,6 +281,7 @@ void DynamicMatrix::savePetsc(std::string filename){
             double converted = x.second;
             this->changeToBigEndian((char *) &converted, sizeof(double));
             entries.push_back({x.first, converted});
+            numNonZero2++;
 
             nonZerosPerRow[x.first / this->cols]++;
         }
@@ -310,7 +312,7 @@ void DynamicMatrix::savePetsc(std::string filename){
     saveFile.write((char*) &numCols, sizeof(int));
     
     this->changeToBigEndian((char *) &numNonzero, sizeof(int));
-    saveFile.write((char*) &numNonzero, sizeof(int));
+    saveFile.write((char*) &numNonZero2, sizeof(int));
     std::cout << "mark 5" << std::endl;
     for(int i : nonZerosPerRow){
         this->changeToBigEndian((char *) &i, sizeof(int));
