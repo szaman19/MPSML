@@ -11,7 +11,11 @@
 #include <thread>
 #include "vectorlib.cpp"
 
-
+typedef struct triad_struct{
+    double J;
+    double Bx;
+    double Bz;
+} Triad;
 
 static char help[] = "Distributed Hamiltonian Object-Oriented Generator and Solver , by Andrew Grace.";
 
@@ -76,7 +80,7 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat * JMat, Mat * BxM
     MPI_Comm_rank(MPI_COMM_WORLD, &thisNode);
 
     if(thisNode == 0){
-        std::string finalVectorName = "J" + std::to_string(JVal) + "Bx" + std::to_string(BxVal) + "Bz" + std::to_string(BzVal) + ".eigenpair";
+        std::string finalVectorName = std::to_string(sizeX) + "J" + std::to_string(JVal) + "Bx" + std::to_string(BxVal) + "Bz" + std::to_string(BzVal) + ".eigenpair";
         PETSCVectorLoader loader;
         loader.readPETSC(vectorFileName);
         loader.setEigenval(re);
@@ -101,16 +105,21 @@ int main(int argc, char *argv[]){
 
     /*  Before we bother with SLEPc, we should get arguments
         Argument 1: Lattice Size
-        Argument 2: J
-        Argument 3: Bx
-        Argument 4: Bz
-        Argument 5 and 6: --verbose or forcegen
+        Argument 2: (file) or (direct)
+        Argument 3: J or filename
+        Argument 4: Bx
+        Argument 5: Bz
+        Argument 6 and 7: --verbose or forcegen
         Others: just for PETSC
     */
 
-    if(argc < 5){
-        PetscPrintf(MPI_COMM_WORLD, "This program requires at least 5 arguments\n");
-        PetscPrintf(MPI_COMM_WORLD, "Usage: ./sohg <Lattice Size in 1D> <J multiplier> <Bx Multiplier> <Bz Multiplier> <--save-file or --force-gen>\n");
+
+
+
+    if(argc < 4){
+        PetscPrintf(MPI_COMM_WORLD, "This program requires at least 3 arguments\n");
+        PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> direct <J multiplier> <Bx Multiplier> <Bz Multiplier> <--verbose or --force-gen> <PETSC args>\n");
+         PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> file <filename> <--verbose or --force-gen> <PETSC args>\n");
         PetscPrintf(MPI_COMM_WORLD, "Please try again.\n");
         SlepcFinalize();
         return 0;
@@ -121,18 +130,6 @@ int main(int argc, char *argv[]){
     bool verbose = false;
     bool forceGenerate = false;
     int lattice_size;
-    double J;
-    double Bx;
-    double Bz;
-
-
-    for(int i = 5; i < argc; i++){
-        if(!strcmp(argv[i], "--verbose"))
-            verbose = true;
-        if(!strcmp(argv[i], "--force-gen"))
-            forceGenerate = true;
-    }
-
     try{
         std::string sizeStr(argv[1]);
         lattice_size = std::stoi(sizeStr);
@@ -148,50 +145,145 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-    try{
-        std::string JString(argv[2]);
-        J = std::stod(JString);
+    std::vector<Triad> solveForArray;
+    if(!strcmp(argv[2], "direct")){
+        //Direct
+
+        double J, Bx, Bz;
+        try{
+            std::string JString(argv[3]);
+            J = std::stod(JString);
+        }
+        catch(const std::invalid_argument & e){
+            PetscPrintf(MPI_COMM_WORLD, "Invalid argument %s supplied for J.\n", argv[2]);
+            SlepcFinalize();
+            return 0;
+        }
+        catch(const std::out_of_range & e){
+            PetscPrintf(MPI_COMM_WORLD, "Out of range argument %s supplied for J.\n" , argv[2]);
+            SlepcFinalize();
+            return 0;
+        }
+
+        try{
+            std::string BxString(argv[4]);
+            Bx = std::stod(BxString);
+        }
+        catch(const std::invalid_argument & e){
+            PetscPrintf(MPI_COMM_WORLD, "Invalid argument %s supplied for Bx.", argv[3]);
+            SlepcFinalize();
+            return 0;
+        }
+        catch(const std::out_of_range & e){
+            PetscPrintf(MPI_COMM_WORLD, "Out of range argument %s supplied for Bx.\n" , argv[3]);
+            SlepcFinalize();
+            return 0;
+        }
+
+        try{
+            std::string BzString(argv[5]);
+            Bz = std::stod(BzString);
+        }
+        catch(const std::invalid_argument & e){
+            PetscPrintf(MPI_COMM_WORLD, "Invalid argument %s supplied for Bz.\n", argv[4]);
+            SlepcFinalize();
+            return 0;
+        }
+        catch(const std::out_of_range & e){
+            PetscPrintf(MPI_COMM_WORLD, "Out of range argument %s supplied for Bz.\n" , argv[4]);
+            SlepcFinalize();
+            return 0;
+        }
+
+        solveForArray.push_back({J, Bx, Bz});
+        for(int i = 6; i < argc; i++){
+        if(!strcmp(argv[i], "--verbose"))
+            verbose = true;
+        if(!strcmp(argv[i], "--force-gen"))
+            forceGenerate = true;
     }
-    catch(const std::invalid_argument & e){
-        PetscPrintf(MPI_COMM_WORLD, "Invalid argument %s supplied for J.\n", argv[2]);
-        SlepcFinalize();
-        return 0;
+
+
     }
-    catch(const std::out_of_range & e){
-        PetscPrintf(MPI_COMM_WORLD, "Out of range argument %s supplied for J.\n" , argv[2]);
+    else if(!strcmp(argv[2], "file")){
+        //File
+        std::ifstream input(argv[3]);
+
+        if(input.good()){
+            std::string line;
+            int lineCounter = 1;
+            while(std::getline(input,line)){
+                double tempJ, tempBx, tempBz;
+                std::string builder;
+                int currentValue = 0;
+                for(int i = 0; i < line.length(); i++){
+                    if(line[i] != ',' && i != line.length() - 1){
+                        builder += line[i];
+                    }
+                    else{
+                        double temp = 0;
+                        try{
+                            temp = std::stod(builder);
+                        }
+                        catch(const std::invalid_argument & e){
+                            PetscPrintf(MPI_COMM_WORLD, "Issue on line %d of input file", lineCounter);
+                            SlepcFinalize();
+                            return 0;
+                        }
+                        catch(const std::out_of_range & e){
+                            PetscPrintf(MPI_COMM_WORLD, "Issue on line %d of input file", lineCounter);
+                            SlepcFinalize();
+                            return 0;
+                        }
+                        builder = "";
+                        if(currentValue == 0)
+                            tempJ = temp;
+                        else if(currentValue == 1)
+                            tempBx = temp;
+                        else
+                            tempBz = temp;
+
+                        currentValue++;
+                    }
+                }
+
+                solveForArray.push_back({tempJ, tempBx, tempBz});
+                lineCounter++;
+
+            }
+
+
+        }
+        else{
+            input.close();
+            PetscPrintf(MPI_COMM_WORLD, "Could not find the input file. Please try again.\n");
+            SlepcFinalize();
+            return 0;
+
+        }
+
+        input.close();
+
+        for(int i = 5; i < argc; i++){
+            if(!strcmp(argv[i], "--verbose"))
+            verbose = true;
+            if(!strcmp(argv[i], "--force-gen"))
+            forceGenerate = true;
+
+
+        }
+
+    }
+    else{
+        PetscPrintf(MPI_COMM_WORLD, "Invalid mode \"%s\"supplied. Please try again.\n", argv[2]);
         SlepcFinalize();
         return 0;
     }
 
-    try{
-        std::string BxString(argv[3]);
-        Bx = std::stod(BxString);
-    }
-    catch(const std::invalid_argument & e){
-        PetscPrintf(MPI_COMM_WORLD, "Invalid argument %s supplied for Bx.", argv[3]);
-        SlepcFinalize();
-        return 0;
-    }
-    catch(const std::out_of_range & e){
-        PetscPrintf(MPI_COMM_WORLD, "Out of range argument %s supplied for Bx.\n" , argv[3]);
-        SlepcFinalize();
-        return 0;
-    }
+   
+   
 
-    try{
-        std::string BzString(argv[4]);
-        Bz = std::stod(BzString);
-    }
-    catch(const std::invalid_argument & e){
-        PetscPrintf(MPI_COMM_WORLD, "Invalid argument %s supplied for Bz.\n", argv[4]);
-        SlepcFinalize();
-        return 0;
-    }
-    catch(const std::out_of_range & e){
-        PetscPrintf(MPI_COMM_WORLD, "Out of range argument %s supplied for Bz.\n" , argv[4]);
-        SlepcFinalize();
-        return 0;
-    }
+   
 
     if(verbose) PetscPrintf(MPI_COMM_WORLD, "\n2021, Andrew Grace, Binghamton University.\nInitializing SLEPC and PETSC...\n");
     if(verbose) PetscPrintf(MPI_COMM_WORLD, "Done!\n");
@@ -298,8 +390,13 @@ int main(int argc, char *argv[]){
         }
         auto solveBegin = std::chrono::system_clock::now();
 
-        performSolve(J, Bx, Bz, &JPetsc, &BxPetsc, &BzPetsc, verbose);
-
+        for(int i = 0; i < solveForArray.size(); i++){
+            double J, Bx, Bz;
+            J = solveForArray[i].J;
+            Bx = solveForArray[i].Bx;
+            Bz = solveForArray[i].Bz;
+            performSolve(J, Bx, Bz, &JPetsc, &BxPetsc, &BzPetsc, verbose);
+        }
         auto endSolve = std::chrono::system_clock::now();
         auto solveE = std::chrono::duration_cast<std::chrono::seconds>(endSolve - start);
         if(thisNode == 0) {
@@ -319,3 +416,5 @@ int main(int argc, char *argv[]){
 
 
 }
+
+
