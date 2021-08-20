@@ -43,11 +43,9 @@ def instant_indices(num_independent_indices, i):
 #returns all the coefficients for a 2 X 2 network
 def net_2x2(A,B):
     AB=[A, B]
-    C = [0 for i in range (2**4)]
-    count=0
+    C = []
     for i ,j ,k ,l in indices(4,2):  
-        C[count]=torch.einsum('zijab, zjicd, zklba, zlkdc->z', AB[i], AB[j], AB[k], AB[l])
-        count+=1  
+        C.append(torch.einsum('zijab, zjicd, zklba, zlkdc->z', AB[i], AB[j], AB[k], AB[l]))
     ans=torch.stack(C)
     return tf.transpose(ans)
 
@@ -70,11 +68,9 @@ def single_net_2x2(A,B, i):
 
 def net_3x3(A,B):
     AB=[A,B]
-    C = [0 for i in range (2**9)]
-    count=0
+    C = []
     for i ,j ,k ,l ,m ,n ,o ,p ,q in indices(9, 2):    
-        C[count]=torch.einsum('zabjk, zcamn, zbcpq, zdelj, zfdom, zefrp, zghkl, zigno, zhiqr->z', AB[i], AB[j], AB[k], AB[l], AB[m], AB[n], AB[o], AB[p], AB[q])
-        count+=1
+        C.append(torch.einsum('zabjk, zcamn, zbcpq, zdelj, zfdom, zefrp, zghkl, zigno, zhiqr->z', AB[i[0]], AB[i[1]], AB[i[2]], AB[i[3]], AB[i[4]], AB[i[5]], AB[i[6]], AB[i[7]], AB[i[8]]))
     ans=torch.stack(C)
     return tf.transpose(ans)
 
@@ -96,8 +92,7 @@ def single_net_3x3(A,B, i):
 
 def net_4x4(A,B, samples):
     AB=[A,B]
-    C = [0 for i in range (samples)]
-    count=0
+    C = []
     indis = uniform_random(4, samples)
     for i in (indis):
         CI = instant_indices(16,i) #current index
@@ -105,8 +100,7 @@ def net_4x4(A,B, samples):
         Y = torch.einsum('zabfe, zcaji, zdcnm, zbdrq-> zfejinmrq', AB[CI[4]], AB[CI[5]], AB[CI[6]], AB[CI[7]])
         Z = torch.einsum('zabgf, zcakj, zdcon, zbdsr-> zgfkjonsr', AB[CI[8]], AB[CI[9]], AB[CI[10]], AB[CI[11]])
         W = torch.einsum('zabhg, zcalk, zdcpo, zbdts-> zhglkpots', AB[CI[12]], AB[CI[13]], AB[CI[14]], AB[CI[15]])
-        C[count] = torch.einsum('zehilmpqt, zfejinmrq, zgfkjonsr, zhglkpots->z', X, Y, Z, W)
-        count+=1
+        C.append(torch.einsum('zehilmpqt, zfejinmrq, zgfkjonsr, zhglkpots-> z', X, Y, Z, W))
     ans=torch.stack(C)
     return tf.transpose(ans)
 
@@ -135,8 +129,7 @@ def single_net_4x4(A,B, CI):
 
 def net_5x5(A,B, samples):
     AB=[A,B]
-    C = [0 for i in range (samples)]
-    count=0
+    C = []
     indis = uniform_random(5, samples)
     for i in (indis):
         CI = instant_indices(25,i) #current index
@@ -149,7 +142,7 @@ def net_5x5(A,B, samples):
         XYZU = torch.einsum('zgfihkjmlon, zpfqhrjsltn -> zgpiqkrmsot', XYZ, U)
         V = torch.einsum('zabgp, zcaiq, zdckr, zedms, zbeot -> zgpiqkrmsot', AB[CI[20]], AB[CI[21]], AB[CI[22]], AB[CI[23]], AB[CI[24]])
         C[count] = torch.einsum('zgpiqkrmsot, zgpiqkrmsot->z', XYZU, V)
-        count+=1
+        C.append(torch.einsum('zgpiqkrmsot, zgpiqkrmsot->z', XYZU, V))
     ans=torch.stack(C)
     return tf.transpose(ans)
 
@@ -188,8 +181,7 @@ def single_net_5x5(A,B, CI):
 
 def net_6x6(A, B, samples):
     AB=[A,B]
-    C = [0 for i in range (samples)]
-    count=0
+    C = []
     indis = uniform_random(6, samples)
     for i in (indis):
         CI = instant_indices(36,i) #current index
@@ -203,8 +195,7 @@ def net_6x6(A, B, samples):
         V = torch.einsum('zabnt, zcaou, zdcpv, zedqw, zferx, zbfsy -> zntoupvqwrxsy', AB[CI[24]], AB[CI[25]], AB[CI[26]], AB[CI[27]], AB[CI[28]], AB[CI[29]])
         XYZUV = torch.einsum('zhtiujvkwlxmy, zntoupvqwrxsy -> zhniojpkqlrms', XYZU, V)
         W = torch.einsum('zabhn, zcaio, zdcjp, zedkq, zfelr, zbfms -> zhniojpkqlrms', AB[CI[30]], AB[CI[31]], AB[CI[32]], AB[CI[33]], AB[CI[34]], AB[CI[35]])
-        C[count] = torch.einsum('zhniojpkqlrms, zhniojpkqlrms->z', XYZUV, W)
-        count+=1
+        C.append(torch.einsum('zhniojpkqlrms, zhniojpkqlrms->z', XYZUV, W))
     ans=torch.stack(C)
     return tf.transpose(ans)
 
@@ -308,6 +299,5 @@ def Monte_Carlo(A, B, net):
 
             config = copy.copy(temp_config)
             Ca = Cb
-        else:
- 
+        
     return config

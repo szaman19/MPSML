@@ -6,7 +6,7 @@ from torch.utils.data import TensorDataset, DataLoader, random_split
 import matplotlib.pyplot as plt 
 
 import pickle
-
+import tensor_net_func
 
 def seq_gen(num_q):
     if num_q == 2:
@@ -63,8 +63,10 @@ class MPS_autoencoder(nn.Module):
     def forward(self, x, num_qubits):
         spin_up, spin_down = self.encode(x)
         gs = self.decode(spin_up, spin_down, num_qubits)
+        print(gs.shape)
         gs = gs / torch.norm(gs, dim = 1).view(-1,1)
         return gs
+
 
 def check_converged(prev_losses, cur_loss):
     rolling_avg = (sum(prev_losses) / len(prev_losses) )
