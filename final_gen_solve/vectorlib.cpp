@@ -103,6 +103,14 @@ class PETSCVectorLoader{
             eigenvalue = e;
         }
 
+        std::vector<double> &getVals(){
+            return values;
+        }
+
+        double getEigenvalue(){
+            return eigenvalue;
+        }
+
 
 
     private:

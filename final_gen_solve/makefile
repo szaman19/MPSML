@@ -5,9 +5,17 @@ SHELL:=/bin/bash
 
 all: matgen
 
+dirs: 
+	mkdir generated_eigenvectors
+	mkdir slurm_logs
+
 matgen: pure_petsc_mat_gen.cpp genmethods.cpp vectorlib.cpp checkmethods.cpp
 	mpic++ $(FLAGS) pure_petsc_mat_gen.cpp -o $@ $(INCLUDES) $(MYLIBS)
 	@echo Finished Compilation.
 
+gencsv: generateCSV.cpp
+	gcc $(FLAGS) generateCSV.cpp -o gencsv
+
 clean:
-	rm *.o matgen
+	rm *.o matgen gencsv *.csv
+	rm -rf *.eigenpair *.info
