@@ -11,6 +11,7 @@
 #include <thread>
 #include "vectorlib.cpp"
 
+
 typedef struct triad_struct{
     double J;
     double Bx;
@@ -80,7 +81,7 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat * JMat, Mat * BxM
     MPI_Comm_rank(MPI_COMM_WORLD, &thisNode);
 
     if(thisNode == 0){
-        std::string finalVectorName = std::to_string(sizeX) + "J" + std::to_string(JVal) + "Bx" + std::to_string(BxVal) + "Bz" + std::to_string(BzVal) + ".eigenpair";
+        std::string finalVectorName = "generated_eigenvectors/" + std::to_string(sizeX) + "J" + std::to_string(JVal) + "Bx" + std::to_string(BxVal) + "Bz" + std::to_string(BzVal) + ".eigenpair";
         PETSCVectorLoader loader;
         loader.readPETSC(vectorFileName);
         loader.setEigenval(re);
@@ -118,8 +119,8 @@ int main(int argc, char *argv[]){
 
     if(argc < 4){
         PetscPrintf(MPI_COMM_WORLD, "This program requires at least 3 arguments\n");
-        PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> direct <J multiplier> <Bx Multiplier> <Bz Multiplier> <--verbose or --force-gen> <PETSC args>\n");
-         PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> file <filename> <--verbose or --force-gen> <PETSC args>\n");
+        PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> direct <J multiplier> <Bx Multiplier> <Bz Multiplier> <--verbose, --validate, or --force-gen> <PETSC args>\n");
+         PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> file <filename> <--verbose, --validate, or --force-gen> <PETSC args>\n");
         PetscPrintf(MPI_COMM_WORLD, "Please try again.\n");
         SlepcFinalize();
         return 0;
@@ -129,6 +130,7 @@ int main(int argc, char *argv[]){
 
     bool verbose = false;
     bool forceGenerate = false;
+    bool doValidate = false;
     int lattice_size;
     try{
         std::string sizeStr(argv[1]);
@@ -201,6 +203,10 @@ int main(int argc, char *argv[]){
             verbose = true;
         if(!strcmp(argv[i], "--force-gen"))
             forceGenerate = true;
+        if(!strcmp(argv[i], "--validate"))
+            doValidate = true;
+
+
     }
 
 
@@ -217,33 +223,36 @@ int main(int argc, char *argv[]){
                 std::string builder;
                 int currentValue = 0;
                 for(int i = 0; i < line.length(); i++){
-                    if(line[i] != ',' && i != line.length() - 1){
-                        builder += line[i];
-                    }
-                    else{
-                        double temp = 0;
-                        try{
-                            temp = std::stod(builder);
+                    if(line.length() != 0){
+                        if(line[i] != ',' && i != line.length() - 1){
+                            builder += line[i];
                         }
-                        catch(const std::invalid_argument & e){
-                            PetscPrintf(MPI_COMM_WORLD, "Issue on line %d of input file", lineCounter);
-                            SlepcFinalize();
-                            return 0;
-                        }
-                        catch(const std::out_of_range & e){
-                            PetscPrintf(MPI_COMM_WORLD, "Issue on line %d of input file", lineCounter);
-                            SlepcFinalize();
-                            return 0;
-                        }
-                        builder = "";
-                        if(currentValue == 0)
-                            tempJ = temp;
-                        else if(currentValue == 1)
-                            tempBx = temp;
-                        else
-                            tempBz = temp;
+                        else{
+                            if(line.length() -1 == i) builder += line[i];
+                            double temp = 0;
+                            try{
+                                temp = std::stod(builder);
+                            }
+                            catch(const std::invalid_argument & e){
+                                PetscPrintf(MPI_COMM_WORLD, "Issue on line %d of input file, #= %d,\n ", lineCounter, currentValue );
+                                SlepcFinalize();
+                                return 0;
+                            }
+                            catch(const std::out_of_range & e){
+                                PetscPrintf(MPI_COMM_WORLD, "Issue on line %d of input file\n", lineCounter);
+                                SlepcFinalize();
+                                return 0;
+                            }
+                            builder = "";
+                            if(currentValue == 0)
+                                tempJ = temp;
+                            else if(currentValue == 1)
+                                tempBx = temp;
+                            else
+                                tempBz = temp;
 
-                        currentValue++;
+                            currentValue++;
+                        }
                     }
                 }
 
@@ -269,6 +278,8 @@ int main(int argc, char *argv[]){
             verbose = true;
             if(!strcmp(argv[i], "--force-gen"))
             forceGenerate = true;
+            if(!strcmp(argv[i], "--validate"))
+            doValidate = true;
 
 
         }
@@ -279,11 +290,6 @@ int main(int argc, char *argv[]){
         SlepcFinalize();
         return 0;
     }
-
-   
-   
-
-   
 
     if(verbose) PetscPrintf(MPI_COMM_WORLD, "\n2021, Andrew Grace, Binghamton University.\nInitializing SLEPC and PETSC...\n");
     if(verbose) PetscPrintf(MPI_COMM_WORLD, "Done!\n");
@@ -305,8 +311,6 @@ int main(int argc, char *argv[]){
         std::string BzMatFileName = "BzMat_" + std::to_string(lattice_size) + ".dynamicmatrix";
         std::string BxMatFileName = "BxMat_" + std::to_string(lattice_size) + ".dynamicmatrix";
         
-
-        
         MPI_Barrier(MPI_COMM_WORLD);
 
         if(thisNode < 3 ){
@@ -326,8 +330,13 @@ int main(int argc, char *argv[]){
 
                 for(int i = thisNode; i < 3; i += numberOfNodes){
                     if(verbose) std::cout << "Generating Matrix " << i << std::endl;
-                    IsingHamiltonian IH(lattice_size,i);
-                
+                    if(!doValidate){
+                        IsingHamiltonian IH(lattice_size,i);
+                    }
+                    else{
+                        IsingHamiltonian IH(lattice_size,i, true);
+                    }
+
                 }
             }
 

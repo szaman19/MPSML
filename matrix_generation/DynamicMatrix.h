@@ -27,7 +27,7 @@ class DynamicMatrix{
         void tensorInPlace( DynamicMatrix& other );
         void addInPlaceRef(DynamicMatrix& other );
         void addInPlace(DynamicMatrix other );
-
+        bool isHermitian();
         void reserve(long numberValues);
         //Tensor Product
         DynamicMatrix  tensor(DynamicMatrix & other);

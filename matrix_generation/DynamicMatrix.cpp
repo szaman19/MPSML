@@ -238,7 +238,7 @@ void DynamicMatrix::savePetsc(std::string filename){
     //PetscInt    *column indices of all nonzeros (starting index is zero)
     //PetscScalar *values of all nonzeros
     //this->clean();
-    std::cout << "mark 1" << std::endl;
+   
     int classID = 1211216;
     int numRows = this->rows;
     int numCols = this->cols;
@@ -247,33 +247,18 @@ void DynamicMatrix::savePetsc(std::string filename){
     int numNonZero = 0;
     
     std::vector<int> nonZerosPerRow;
-    std::cout << "attempting to allocate " << this->rows << "integers";
+  
     nonZerosPerRow.reserve(this->rows);
 
-    std::cout << "mark 1.1" << std::endl;
+   
 
     std::vector<int> columnIndicesOfNonzeros;
-    std::cout << "attempting to allocate " << this->matrixEntries.size() << "integers" <<std::endl;
+  
     columnIndicesOfNonzeros.reserve(this->matrixEntries.size());
-
-    std::cout << "mark 1.2" << std::endl;
-
-    /*
-    std::vector<double> values;
-    std::cout << "attempting to allocate " << this->matrixEntries.size() << "doubles" << std::endl;
-    values.reserve(this->matrixEntries.size());
-
-    std::cout << "mark 1.3" << std::endl;
-
-    std::map<long, double> orderedMatrixEntries(matrixEntries.begin(), matrixEntries.end());
-    */
-
-    
 
     for(int i = 0; i < this->rows; i++){
         nonZerosPerRow.push_back(0);
     }
-    std::cout << "mark 2" << std::endl;
 
     std::vector<Entry> entries;
     for(auto const& x : matrixEntries){
@@ -287,18 +272,13 @@ void DynamicMatrix::savePetsc(std::string filename){
         }
     }
 
-    std::cout << "mark 2.5" << std::endl;
-
     std::sort(entries.begin(), entries.end());
-
-    std::cout << "mark 3" << std::endl;
 
     for(long i = 0; i < entries.size(); i++){
         int x = entries[i].idx % cols;
         this->changeToBigEndian((char *) &x, sizeof(int));
         columnIndicesOfNonzeros.push_back(x);
     }
-     std::cout << "mark 4" << std::endl;
 
     std::ofstream saveFile(filename, std::ios::out | std::ios::binary);
 
@@ -313,23 +293,21 @@ void DynamicMatrix::savePetsc(std::string filename){
     
     this->changeToBigEndian((char *) &numNonZero, sizeof(int));
     saveFile.write((char*) &numNonZero, sizeof(int));
-    std::cout << "mark 5" << std::endl;
+
     for(int i : nonZerosPerRow){
         this->changeToBigEndian((char *) &i, sizeof(int));
         saveFile.write((char*) &i, sizeof(int));
     }
-    std::cout << "mark 6" << std::endl;
-
+ 
     for(int i : columnIndicesOfNonzeros){
         
         saveFile.write((char*) &i, sizeof(int));
     }
-    std::cout << "mark 7" << std::endl;
+   
 
     for(long i = 0; i < entries.size();i++){
         saveFile.write(reinterpret_cast<char*>(&entries[i].value), sizeof(double));
     }
-    std::cout << "mark 8" << std::endl;
     saveFile.close();
 }
 
@@ -362,3 +340,22 @@ void DynamicMatrix::clean(){
     }
 }
 
+bool DynamicMatrix::isHermitian(){
+    for(auto const& x : matrixEntries){
+        long i = x.first / cols;
+        long j = x.first % cols;
+        long appropriateIndex = j * cols + i;
+        std::unordered_map<long, double>::const_iterator pos = matrixEntries.find(appropriateIndex);
+        if (pos != matrixEntries.end()) {
+            if(pos->second  == x.second){
+            }
+            else{
+                return false;
+            }
+        }
+        else{
+            return false;
+        }
+    }
+    return true;
+}

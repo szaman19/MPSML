@@ -1,6 +1,6 @@
 FLAGS= -std=c++11 -g -O2
 MYLIBS = ${SLEPC_DIR}/${PETSC_ARCH}/lib/libslepc.so ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so 
-INCLUDES = -I${SLEPC_DIR}/${PETSC_ARCH}/include -I${SLEPC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/include
+INCLUDES = -I eigen -I eigen/unsupported -I${SLEPC_DIR}/${PETSC_ARCH}/include -I${SLEPC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${PETSC_DIR}/include
 SHELL:=/bin/bash
 
 all: matgen
@@ -48,3 +48,10 @@ modules:
 
 matStoreTest:
 	@mpic++ $(FLAGS) fileSaveTest.cpp -o test $(INCLUDES) $(MYLIBS)
+
+gencsv: generate.cpp
+	g++ generateCSV.cpp -o gencsv $(FLAGS)
+
+
+eigencheck: eigen_checker.cpp
+	g++ eigen_checker.cpp -o eigencheck -O2

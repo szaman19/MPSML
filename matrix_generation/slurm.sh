@@ -1,6 +1,4 @@
 #!/bin/bash
-#SBATCH -p RM
-#SBATCH -A phy210036p
 #SBATCH --job-name=Hamiltonian_Solver_agrace
 #SBATCH --mail-type=END        # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=agrace2@binghamton.edu
@@ -24,4 +22,4 @@ echo "Number of Tasks Allocated      = $SLURM_NTASKS"
 echo "Number of Cores/Task Allocated = $SLURM_CPUS_PER_TASK"
 
 
-srun ./matgen 5 1 1 1 --verbose
+srun --mpi=pmix_v2 ./matgen 4 direct 1 1 1 --validate

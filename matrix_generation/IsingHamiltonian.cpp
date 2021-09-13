@@ -1,6 +1,7 @@
 #include "IsingHamiltonian.h"
 #include <chrono>
 #include<iostream>
+#include "EigenIsingHamiltonian.cpp"
 
 IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
     latice_size_one_dimension = latice_size;
@@ -55,7 +56,7 @@ IsingHamiltonian::IsingHamiltonian(long latice_size, int which){
 
 }
 
-IsingHamiltonian::IsingHamiltonian(long latice_size, int which, bool sv){
+IsingHamiltonian::IsingHamiltonian(long latice_size, int which, bool validate){
     latice_size_one_dimension = latice_size;
     N = latice_size * latice_size;
     initializePauliMatrices();
@@ -66,41 +67,45 @@ IsingHamiltonian::IsingHamiltonian(long latice_size, int which, bool sv){
     std::ifstream bzfile(BzMatFileName);
     std::ifstream bxfile(BxMatFileName);
 
+
+    EigenIsingHamiltonian correct(latice_size);
+
     if(!jfile.good() && which == 0){
         auto start = std::chrono::system_clock::now();
         generateJMatrixExperimental();
         auto save = std::chrono::system_clock::now();
-        if(sv)
             JTerms.savePetsc(JMatFileName);
         auto end = std::chrono::system_clock::now();
         auto totalElapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
         auto genElapsed = std::chrono::duration_cast<std::chrono::seconds>(save - start);
         auto saveElapsed =std::chrono::duration_cast<std::chrono::seconds>(end - save);
         std::cout << "J Matrix times:" << std::endl << "Generation: "  << genElapsed.count() << std::endl << "Save: " << saveElapsed.count() << std::endl << "Total: " << totalElapsed.count() << std::endl << std::endl;
+        std::cout << "Is J correct:" << correct.compareToDynamicMatrix(JTerms, 0) << std::endl;
+    
     }
     if(!bzfile.good() && which == 1){
         auto start = std::chrono::system_clock::now();
         generateBzMatrixExperimental();
         auto save = std::chrono::system_clock::now();
-        if(sv)
             BzTerms.savePetsc(BzMatFileName);
         auto end = std::chrono::system_clock::now();
         auto totalElapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
         auto genElapsed = std::chrono::duration_cast<std::chrono::seconds>(save - start);
         auto saveElapsed =std::chrono::duration_cast<std::chrono::seconds>(end - save);
         std::cout << "Bz Matrix times:" << std::endl << "Generation: "  << genElapsed.count() << std::endl << "Save: " << saveElapsed.count() << std::endl << "Total: " << totalElapsed.count() << std::endl << std::endl;
+        std::cout << "Is Bz correct:" << correct.compareToDynamicMatrix(BzTerms, 1) << std::endl;
     }
     if(!bxfile.good() && which == 2){
         auto start = std::chrono::system_clock::now();
         generateBxMatrixExperimental();
         auto save = std::chrono::system_clock::now();
-        if(sv)
         BxTerms.savePetsc(BxMatFileName);
         auto end = std::chrono::system_clock::now();
         auto totalElapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
         auto genElapsed = std::chrono::duration_cast<std::chrono::seconds>(save - start);
         auto saveElapsed =std::chrono::duration_cast<std::chrono::seconds>(end - save);
         std::cout << "Bx Matrix times:" << std::endl << "Generation: "  << genElapsed.count() << std::endl << "Save: " << saveElapsed.count() << std::endl << "Total: " << totalElapsed.count() << std::endl << std::endl;
+        std::cout << "Is Bx correct:" << correct.compareToDynamicMatrix(BxTerms, 2) << std::endl;
     }
 
     jfile.close();
