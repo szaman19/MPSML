@@ -14,7 +14,7 @@ matgen: pure_petsc_mat_gen.cpp genmethods.cpp vectorlib.cpp checkmethods.cpp
 	@echo Finished Compilation.
 
 gencsv: generateCSV.cpp
-	gcc $(FLAGS) generateCSV.cpp -o gencsv
+	g++ $(FLAGS) generateCSV.cpp -o gencsv
 
 clean:
 	rm *.o matgen gencsv *.csv
