@@ -9,6 +9,7 @@
 #include "vectorlib.cpp"
 #include "genmethods.cpp"
 #include "checkmethods.cpp"
+#include "EigensetLib.cpp"
 
 typedef struct triad_struct
 {
@@ -16,6 +17,7 @@ typedef struct triad_struct
     double Bx;
     double Bz;
 } Triad;
+
 
 void performSolve(double JVal, double BxVal, double BzVal, Mat *JMat, Mat *BxMat, Mat *BzMat, bool verbose)
 {
@@ -76,11 +78,84 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat *JMat, Mat *BxMat
 
     if (thisNode == 0)
     {
-        std::string finalVectorName = "generated_eigenvectors/" + std::to_string(sizeX) + "J" + std::to_string(JVal) + "Bx" + std::to_string(BxVal) + "Bz" + std::to_string(BzVal) + ".eigenpair";
+        std::string finalVectorName = "Eigenvalue-J-" + std::to_string(JVal) + "-Bx-"+ std::to_string(BxVal) + "-Bz-" + std::to_string(JVal);
         PETSCVectorLoader loader;
         loader.readPETSC(vectorFileName);
         loader.setEigenval(re);
         loader.write(finalVectorName);
+        remove(vectorFileName.c_str());
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+
+void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Mat *BxMat, Mat *BzMat, Eigenset& e, bool verbose)
+{
+
+    int sizeX, sizeY;
+    Mat Sum;
+
+    MatGetSize(*JMat, &sizeX, &sizeY);
+    MatCreate(PETSC_COMM_WORLD, &Sum);
+    MatSetSizes(Sum, PETSC_DECIDE, PETSC_DECIDE, sizeX, sizeY);
+    MatSetFromOptions(Sum);
+    MatSetUp(Sum);
+    MatZeroEntries(Sum);
+
+    MatAssemblyBegin(Sum, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY);
+    MatAYPX(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN);
+    MatAYPX(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN);
+    MatAYPX(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN);
+
+    /* Set up SLEPC */
+    Vec imaginary, real;
+    PetscScalar im, re;
+    EPS solver;
+    int nconv;
+
+    /* Initialize vectors */
+    MatCreateVecs(Sum, NULL, &imaginary);
+    MatCreateVecs(Sum, NULL, &real);
+    EPSCreate(PETSC_COMM_WORLD, &solver);
+    EPSSetOperators(solver, Sum, NULL);
+    EPSSetProblemType(solver, EPS_HEP);
+    EPSSetWhichEigenpairs(solver, EPS_SMALLEST_REAL);
+    EPSSetFromOptions(solver);
+    EPSSolve(solver);
+    EPSGetConverged(solver, &nconv);
+    EPSGetEigenpair(solver, 0, &re, &im, real, imaginary);
+    EPSDestroy(&solver);
+
+    /*
+        Real Eigenvalue - re
+        Real Eigenvector - real
+    */
+    PetscPrintf(MPI_COMM_WORLD, "%f\n", re);
+    std::string vectorFileName = "Eigenvector_" + std::to_string(sizeX) + ".petscvec";
+    PetscViewer vectorSaver;
+    PetscViewerBinaryOpen(PETSC_COMM_WORLD, vectorFileName.c_str(), FILE_MODE_WRITE, &vectorSaver);
+    VecView(real, vectorSaver);
+    PetscViewerDestroy(&vectorSaver);
+    VecDestroy(&imaginary);
+    VecDestroy(&real);
+    MatDestroy(&Sum);
+
+    /* Convert file to our format on node 0*/
+
+    int thisNode;
+    MPI_Comm_rank(MPI_COMM_WORLD, &thisNode);
+
+    if (thisNode == 0)
+    {
+
+        PETSCVectorLoader loader;
+        loader.readPETSC(vectorFileName);
+        loader.setEigenval(re);
+        
+        e.addEigenpair(IsingEigenpair( JVal, BxVal, BzVal, re, loader.getVals()));
+        
         remove(vectorFileName.c_str());
     }
 
@@ -116,6 +191,7 @@ int main(int argc, char *argv[])
     bool verbose = false;
     bool forceGenerate = false;
     bool doValidate = false;
+    bool batch = false;
     try
     {
         std::string sizeStr(argv[1]);
@@ -281,6 +357,8 @@ int main(int argc, char *argv[])
                 forceGenerate = true;
             if (!strcmp(argv[i], "--validate"))
                 doValidate = true;
+            if (!strcmp(argv[i], "--batch"))
+                doValidate = true;
         }
     }
     else
@@ -357,13 +435,23 @@ int main(int argc, char *argv[])
 
 
     }
+    Eigenset eset;
     for (int i = 0; i < solveForArray.size(); i++)
     {
 
         Js = solveForArray[i].J;
         Bxs = solveForArray[i].Bx;
         Bzs = solveForArray[i].Bz;
-        performSolve(Js, Bxs, Bzs, &J, &Bx, &Bz, verbose);
+        if(batch){
+            performSolve(Js, Bxs, Bzs, &J, &Bx, &Bz, verbose);
+        }
+        else{
+            performSolveEigenSet(Js, Bxs, Bzs, &J, &Bx, &Bz, eset, verbose);
+        }
+    }
+
+    if(batch){
+        eset.write("results.eigenset");
     }
 
     MatDestroy(&J);
