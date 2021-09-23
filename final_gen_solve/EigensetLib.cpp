@@ -41,12 +41,13 @@ class Eigenset{
     
     int version = 1;
     int isBigEndian;
-    int numberEigenvalues;
+    int eigenvectorSize;
     int numberEigenvectors;
 
     std::vector<IsingEigenpair> eigenpairs;
 
     void write(std::string fileName){
+        std::cout << "number of values: " << numberEigenvectors << "\n";
         int format = 1;
         if(!hasCheckedEndian) detectEndianess();
         int isBigEndianInt = (isBigEndian) ? 1 : 0;
@@ -58,10 +59,10 @@ class Eigenset{
         std::ofstream outputFile(fileName, std::ios::out | std::ios::binary );
         outputFile.write((char*) &format, sizeof(int));
         outputFile.write((char*) &isBigEndianInt, sizeof(int));
-        outputFile.write((char*) &numberEigenvalues, sizeof(int));
+        outputFile.write((char*) &eigenvectorSize, sizeof(int));
         outputFile.write((char*) &numberEigenvectors, sizeof(int));
 
-        for(int i = 0; i < numberEigenvalues; i++){
+        for(int i = 0; i < numberEigenvectors; i++){
             IsingEigenpair pair = eigenpairs[i];
             outputFile.write(reinterpret_cast<char*>(&pair.J), sizeof(double));
             outputFile.write(reinterpret_cast<char*>(&pair.Bx), sizeof(double));
@@ -77,8 +78,9 @@ class Eigenset{
 
     void addEigenpair(IsingEigenpair x){
         numberEigenvectors++;
+        if(eigenvectorSize == 0) eigenvectorSize = x.Eigenvector.size();
         eigenpairs.push_back(x);
-
+         
     }
 
     void clear(){
@@ -97,11 +99,11 @@ class Eigenset{
         inputFile.read((char*) &format, sizeof(int));
         inputFile.read((char*) &isBigEndianInt, sizeof(int));
         inputFile.read((char*) &numberEigenvectors, sizeof(int));
-        inputFile.read((char*) &numberEigenvalues, sizeof(int));
+        inputFile.read((char*) &eigenvectorSize, sizeof(int));
         swapEndianness((char*) &format, sizeof(int), false);
         swapEndianness((char*) &isBigEndianInt, sizeof(int), false);
         swapEndianness((char*) &numberEigenvectors, sizeof(int), false);
-        swapEndianness((char*) &numberEigenvalues, sizeof(int), false);
+        swapEndianness((char*) &eigenvectorSize, sizeof(int), false);
 
         if(isBigEndianInt == 1) bigEndianMode = true;
 
@@ -120,7 +122,7 @@ class Eigenset{
             swapEndianness((char*) &tempEV, sizeof(double), bigEndianMode);
 
             std::vector<double> tempVecVals;
-            for(int j = 0; j < numberEigenvalues; i++){
+            for(int j = 0; j < eigenvectorSize; i++){
                 double t;
                 inputFile.read((char*) &t, sizeof(double));
                 swapEndianness((char*) &t, sizeof(double), bigEndianMode);

@@ -78,7 +78,7 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat *JMat, Mat *BxMat
 
     if (thisNode == 0)
     {
-        std::string finalVectorName = "Eigenvalue-J-" + std::to_string(JVal) + "-Bx-"+ std::to_string(BxVal) + "-Bz-" + std::to_string(JVal);
+        std::string finalVectorName = "generated_eigenvectors/Eigenvalue-J-" + std::to_string(JVal) + "-Bx-"+ std::to_string(BxVal) + "-Bz-" + std::to_string(BzVal);
         PETSCVectorLoader loader;
         loader.readPETSC(vectorFileName);
         loader.setEigenval(re);
@@ -149,13 +149,11 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
 
     if (thisNode == 0)
     {
-
         PETSCVectorLoader loader;
-        loader.readPETSC(vectorFileName);
-        loader.setEigenval(re);
+        loader.readPETSC(vectorFileName); 
         
-        e.addEigenpair(IsingEigenpair( JVal, BxVal, BzVal, re, loader.getVals()));
-        
+        IsingEigenpair a( JVal, BxVal, BzVal, re, loader.getVals());
+        e.addEigenpair(a);
         remove(vectorFileName.c_str());
     }
 
@@ -277,6 +275,8 @@ int main(int argc, char *argv[])
                 forceGenerate = true;
             if (!strcmp(argv[i], "--validate"))
                 doValidate = true;
+            if (!strcmp(argv[i], "--batch"))
+                batch = true;
         }
     }
     else if (!strcmp(argv[2], "file"))
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 
         input.close();
 
-        for (int i = 5; i < argc; i++)
+        for (int i = 4; i < argc; i++)
         {
             if (!strcmp(argv[i], "--verbose"))
                 verbose = true;
@@ -358,7 +358,9 @@ int main(int argc, char *argv[])
             if (!strcmp(argv[i], "--validate"))
                 doValidate = true;
             if (!strcmp(argv[i], "--batch"))
-                doValidate = true;
+            {
+                batch = true;
+            }
         }
     }
     else
@@ -442,7 +444,7 @@ int main(int argc, char *argv[])
         Js = solveForArray[i].J;
         Bxs = solveForArray[i].Bx;
         Bzs = solveForArray[i].Bz;
-        if(batch){
+        if(!batch){
             performSolve(Js, Bxs, Bzs, &J, &Bx, &Bz, verbose);
         }
         else{
@@ -450,11 +452,16 @@ int main(int argc, char *argv[])
         }
     }
 
-    if(batch){
+    int thisNode;
+    MPI_Comm_rank(MPI_COMM_WORLD, &thisNode);
+    std::cout << "batched == " << batch << std::endl;
+    if(batch && thisNode == 0){
+        std::cout << "reached";
         eset.write("results.eigenset");
     }
 
     MatDestroy(&J);
     MatDestroy(&Bx);
     MatDestroy(&Bz);
+    SlepcFinalize();
 }

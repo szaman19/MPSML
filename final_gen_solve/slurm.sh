@@ -22,4 +22,4 @@ echo "Number of Tasks Allocated      = $SLURM_NTASKS"
 echo "Number of Cores/Task Allocated = $SLURM_CPUS_PER_TASK"
 
 #Change arguments here
-srun --mpi=pmi2 matgen 4 file 
+srun --mpi=pmix_2 matgen 4 file generated.csv --batch
