@@ -6,7 +6,7 @@
 #include<vector>
 
 /*  
-Eigenset File Formal
+Eigenset File Format
     - File Format version - integer
     - Is Big Endian - integer
     - Number of Eigenvalues - int
@@ -98,12 +98,18 @@ class Eigenset{
 
         inputFile.read((char*) &format, sizeof(int));
         inputFile.read((char*) &isBigEndianInt, sizeof(int));
-        inputFile.read((char*) &numberEigenvectors, sizeof(int));
         inputFile.read((char*) &eigenvectorSize, sizeof(int));
+        inputFile.read((char*) &numberEigenvectors, sizeof(int));
         swapEndianness((char*) &format, sizeof(int), false);
         swapEndianness((char*) &isBigEndianInt, sizeof(int), false);
         swapEndianness((char*) &numberEigenvectors, sizeof(int), false);
         swapEndianness((char*) &eigenvectorSize, sizeof(int), false);
+
+
+        std::cout << format << std::endl;
+        std::cout << isBigEndianInt << std::endl;
+        std::cout << numberEigenvectors << std::endl;
+        std::cout << eigenvectorSize << std::endl;
 
         if(isBigEndianInt == 1) bigEndianMode = true;
 
@@ -122,15 +128,15 @@ class Eigenset{
             swapEndianness((char*) &tempEV, sizeof(double), bigEndianMode);
 
             std::vector<double> tempVecVals;
-            for(int j = 0; j < eigenvectorSize; i++){
+            for(int j = 0; j < eigenvectorSize; j++){
                 double t;
                 inputFile.read((char*) &t, sizeof(double));
                 swapEndianness((char*) &t, sizeof(double), bigEndianMode);
-                
                 tempVecVals.push_back(t);
+                std::cout << t << std::endl;
             }
             eigenpairs.push_back(IsingEigenpair(tempJ, tempBx, tempBz, tempEV, tempVecVals));
-
+            std::cout << tempJ << " " << tempBx << " " << tempBz << " " << tempEV << " " << std::endl << std::endl;
         }
 
     }
@@ -138,27 +144,28 @@ class Eigenset{
 
 
     private:
-        bool hasCheckedEndian = false;
+        
+    bool hasCheckedEndian = false;
 
-        void detectEndianess(){
-            union {
-                uint32_t i;
-                char c[4];
-                } bint = {0x01020304};
-            this->isBigEndian = (bint.c[0] == 1); 
-            this->hasCheckedEndian = true;
-        }
+    void detectEndianess(){
+        union {
+            uint32_t i;
+            char c[4];
+            } bint = {0x01020304};
+        this->isBigEndian = (bint.c[0] == 1); 
+        this->hasCheckedEndian = true;
+    }
 
-        void swapEndianness(char * c, int size, bool isInputBigEndian){
-            if(!this->hasCheckedEndian) this->detectEndianess();
-            if((isInputBigEndian && !this->isBigEndian) || (!isInputBigEndian && this->isBigEndian)){
-                for(int i = 0; i < size / 2; i++){
-                    char temp = c[i];
-                    c[i] = c[size - 1 - i];
-                    c[size - i - 1] = temp;
-                }
+    void swapEndianness(char * c, int size, bool isInputBigEndian){
+        if(!this->hasCheckedEndian) this->detectEndianess();
+        if((isInputBigEndian && !this->isBigEndian) || (!isInputBigEndian && this->isBigEndian)){
+            for(int i = 0; i < size / 2; i++){
+                char temp = c[i];
+                c[i] = c[size - 1 - i];
+                c[size - i - 1] = temp;
             }
-            
         }
+        
+    }
 
 };

@@ -20,9 +20,9 @@ int main(int argc, char* argv[]){
 
     //Populate Arguments
 
-    if(argc < 8 ){
+    if(argc < 9 ){
         std::cout << "not enough argments provided." <<std::endl;
-        std::cout << "usage: ./gencsv <J value> <Stops in Bx> <Stops in Bz> <Initial Bx> <Stop Bx> <Initial Bz> <Stop Bz> " << std::endl;
+        std::cout << "usage: ./gencsv <J value> <Stops in Bx> <Stops in Bz> <Initial Bx> <Stop Bx> <Initial Bz> <Stop Bz> <file name>" << std::endl;
         return 0;
     }
 

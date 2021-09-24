@@ -2,35 +2,35 @@
 #Andy Grace, Josh Szachar 2021
 
 class IsingEigenset:
-    J
-    Bx
-    Bz
-    Eigenvalue
+    J = None
+    Bx = None
+    Bz = None
+    Eigenvalue = None
     Eigenvector = []
 
-    def __init__(self, J, Bx, Bz, Eigenvalue)
+    def __init__(self, J, Bx, Bz, Eigenvalue):
         self.J = J
         self.Bx = Bx 
         self.Bz = Bz
         self.Eigenvalue = Eigenvalue
 
-    def addEigenvectorValue(value)
+    def addEigenvectorValue(value):
         Eigenvector.append(value)
 
 class Eigenset:
     version = 1
-    isBigEndian = false
-    eigenvectorSize
-    numberEigenvectors
+    isBigEndian = False
+    eigenvectorSize = None
+    numberEigenvectors = None
     eigenpairs = []
 
     def isSysBigEndian(self):
         if sys.byteorder == "little":
             self.isBigEndian = false
-            return false;
+            return False
         else:
             self.isBigEndian = true
-            return true;
+            return True
 
     def convertInt(integer, fromEndian, toEndian):
         if fromEndian != toEndian:
@@ -43,20 +43,21 @@ class Eigenset:
         return double
 
     def read(self, filename):
-        bigEndianMode = false
+        bigEndianMode = False
         format = 0
         isBigEndianInt = 0
 
         file = open(filename, "rb")
 
-        format = int.fromBytes(file.read(4), "little")
-        isBigEndianInt = int.fromBytes(file.read(4), "little")
+        format = int.from_bytes(file.read(4), "little")
+        isBigEndianInt = int.from_bytes(file.read(4), "little")
         bigEndianMode = isBigEndianInt == 1
         isSysB = isSysBigEndian()
-        self.numberEigenvectors = convertInt( int.fromBytes(file.read(4), "big" if bigEndianMode else "little"))
-        self.eigenvectorSize = convertInt( int.fromBytes(file.read(4), "big" if bigEndianMode else "little"))
+        self.eigenvectorSize = convertInt( int.from_bytes(file.read(4), "big" if bigEndianMode else "little"))
+        self.numberEigenvectors = convertInt( int.from_bytes(file.read(4), "big" if bigEndianMode else "little"))
+        
 
-        for x in range(0, numberEigenvectors)
+        for x in range(0, numberEigenvectors):
             tempJ = convertDouble(struct.unpack('d', file.read(8))[0], bigEndianMode, isSysB)
             tempBz = convertDouble(struct.unpack('d', file.read(8))[0], bigEndianMode, isSysB)
             tempBx = convertDouble(struct.unpack('d', file.read(8))[0], bigEndianMode, isSysB)
@@ -64,7 +65,7 @@ class Eigenset:
 
             tempEigset = IsingEigenset(tempJ, tempBz, tempBx, tempEV)
 
-            for j in range (0, eigenvectorSize)
+            for j in range (0, eigenvectorSize):
                 tempEigset.addEigenvectorValue(convertDouble(struct.unpack('d', file.read(8))[0], bigEndianMode, isSysB))
             
             self.eigenpairs.append(tempEigset)
