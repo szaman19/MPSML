@@ -22,7 +22,7 @@ def seq_gen(num_q):
     
 class MPS_autoencoder2d(nn.Module):
     def __init__(self, mps_size):
-        super(MPS_autoencoder, self).__init__()        
+        super(MPS_autoencoder2d, self).__init__()        
         self.mps_size = mps_size
         
         mat_size = mps_size ** 4
@@ -86,7 +86,7 @@ def mps_fit(mps_size,
             print_interval = 2):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = MPS_autoencoder(mps_size = mps_size).to(device)
+    model = MPS_autoencoder2d(mps_size = mps_size).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     loss_func = nn.MSELoss()
 

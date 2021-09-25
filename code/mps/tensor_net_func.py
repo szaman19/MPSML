@@ -42,12 +42,14 @@ def instant_indices(num_independent_indices, i):
 
 #returns all the coefficients for a 2 X 2 network
 def net_2x2(A,B):
+    A.requires_grad = True
+    B.requires_grad = True
     AB=[A, B]
     C = []
     for i ,j ,k ,l in indices(4,2):  
         C.append(torch.einsum('zijab, zjicd, zklba, zlkdc->z', AB[i], AB[j], AB[k], AB[l]))
     ans=torch.stack(C)
-    return tf.transpose(ans)
+    return ans.t()
 
 #returns the coefficients for a batch of 2 X 2 network given a spin configuration
 def batched_single_net_2x2(A,B, i):
@@ -67,12 +69,14 @@ def single_net_2x2(A,B, i):
 ##################################################### 3 X 3 ##########################################################################
 
 def net_3x3(A,B):
+    A.requires_grad = True
+    B.requires_grad = True
     AB=[A,B]
     C = []
     for i ,j ,k ,l ,m ,n ,o ,p ,q in indices(9, 2):    
         C.append(torch.einsum('zabjk, zcamn, zbcpq, zdelj, zfdom, zefrp, zghkl, zigno, zhiqr->z', AB[i[0]], AB[i[1]], AB[i[2]], AB[i[3]], AB[i[4]], AB[i[5]], AB[i[6]], AB[i[7]], AB[i[8]]))
     ans=torch.stack(C)
-    return tf.transpose(ans)
+    return ans.t()
 
 def batched_single_net_3x3(A,B, i):
     A.requires_grad = True
@@ -89,8 +93,10 @@ def single_net_3x3(A,B, i):
 
 
 ##################################################### 4 X 4 ##########################################################################
-
+@torch.jit.script
 def net_4x4(A,B, samples):
+    A.requires_grad = True
+    B.requires_grad = True
     AB=[A,B]
     C = []
     indis = uniform_random(4, samples)
@@ -102,7 +108,7 @@ def net_4x4(A,B, samples):
         W = torch.einsum('zabhg, zcalk, zdcpo, zbdts-> zhglkpots', AB[CI[12]], AB[CI[13]], AB[CI[14]], AB[CI[15]])
         C.append(torch.einsum('zehilmpqt, zfejinmrq, zgfkjonsr, zhglkpots-> z', X, Y, Z, W))
     ans=torch.stack(C)
-    return tf.transpose(ans)
+    return ans.t()
 
 def batched_single_net_4x4(A,B, CI):
     A.requires_grad = True
@@ -128,6 +134,8 @@ def single_net_4x4(A,B, CI):
 ##################################################### 5 X 5 ##########################################################################
 
 def net_5x5(A,B, samples):
+    A.requires_grad = True
+    B.requires_grad = True
     AB=[A,B]
     C = []
     indis = uniform_random(5, samples)
@@ -144,7 +152,7 @@ def net_5x5(A,B, samples):
         C[count] = torch.einsum('zgpiqkrmsot, zgpiqkrmsot->z', XYZU, V)
         C.append(torch.einsum('zgpiqkrmsot, zgpiqkrmsot->z', XYZU, V))
     ans=torch.stack(C)
-    return tf.transpose(ans)
+    return ans.t()
 
 def batched_single_net_5x5(A,B, CI):
     A.requires_grad = True
@@ -180,6 +188,8 @@ def single_net_5x5(A,B, CI):
 ##################################################### 6 X 6 ##########################################################################
 
 def net_6x6(A, B, samples):
+    A.requires_grad = True
+    B.requires_grad = True
     AB=[A,B]
     C = []
     indis = uniform_random(6, samples)
@@ -197,7 +207,7 @@ def net_6x6(A, B, samples):
         W = torch.einsum('zabhn, zcaio, zdcjp, zedkq, zfelr, zbfms -> zhniojpkqlrms', AB[CI[30]], AB[CI[31]], AB[CI[32]], AB[CI[33]], AB[CI[34]], AB[CI[35]])
         C.append(torch.einsum('zhniojpkqlrms, zhniojpkqlrms->z', XYZUV, W))
     ans=torch.stack(C)
-    return tf.transpose(ans)
+    return ans.t()
 
 def batched_single_net_6x6(A, B, CI):
     A.requires_grad = True
