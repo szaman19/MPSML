@@ -93,7 +93,6 @@ def single_net_3x3(A,B, i):
 
 
 ##################################################### 4 X 4 ##########################################################################
-@torch.jit.script
 def net_4x4(A,B, samples):
     A.requires_grad = True
     B.requires_grad = True
