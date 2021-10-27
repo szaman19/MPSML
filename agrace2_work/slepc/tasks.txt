@@ -1,4 +1,0 @@
-Verify single works 
-Generate 2d data-
-
-Do it without ground truth using monte carlo
