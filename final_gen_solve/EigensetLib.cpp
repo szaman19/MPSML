@@ -29,7 +29,6 @@ class IsingEigenpair{
         this->Bz = Bz;
         this->Eigenvalue = Eigenvalue;
         this->Eigenvector = Eigenvector;
-
     }
 
 

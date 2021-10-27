@@ -3,6 +3,7 @@
 
 import sys 
 import struct
+import copy
 
 class IsingEigenset:
     J = None
@@ -18,7 +19,10 @@ class IsingEigenset:
         self.Eigenvalue = Eigenvalue
 
     def addEigenvectorValue(self, value):
-        self.Eigenvector.append(value)
+        self.Eigenvector.append(copy.deepcopy(value))
+
+    def clearEigenvector(self):
+        self.Eigenvector.clear()
 
 class Eigenset:
     version = 1
@@ -67,8 +71,10 @@ class Eigenset:
             tempEV = self.convertDouble( (struct.unpack('d', file.read(8))[0]), bigEndianMode, isSysB)
 
             tempEigset = IsingEigenset(tempJ, tempBz, tempBx, tempEV)
-
+            vector = []
             for j in range (0, self.eigenvectorSize):
-                tempEigset.addEigenvectorValue(self.convertDouble(struct.unpack('d', file.read(8))[0], bigEndianMode, isSysB))
-            
-            self.eigenpairs.append(tempEigset)
+                vector.append(self.convertDouble(struct.unpack('d', file.read(8))[0], bigEndianMode, isSysB))
+            tempEigset.Eigenvector = copy.deepcopy(vector)
+            self.eigenpairs.append(copy.deepcopy(tempEigset))
+
+        

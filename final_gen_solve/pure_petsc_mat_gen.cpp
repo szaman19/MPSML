@@ -95,6 +95,7 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
 
     int sizeX, sizeY;
     Mat Sum;
+    
 
     MatGetSize(*JMat, &sizeX, &sizeY);
     MatCreate(PETSC_COMM_WORLD, &Sum);
@@ -154,6 +155,7 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
         
         IsingEigenpair a( JVal, BxVal, BzVal, re, loader.getVals());
         e.addEigenpair(a);
+        
         remove(vectorFileName.c_str());
     }
 
@@ -177,8 +179,8 @@ int main(int argc, char *argv[])
     if (argc < 4)
     {
         PetscPrintf(MPI_COMM_WORLD, "This program requires at least 3 arguments\n");
-        PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> direct <J multiplier> <Bx Multiplier> <Bz Multiplier> <--verbose, --validate, or --force-gen> <PETSC args>\n");
-        PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> file <filename> <--verbose, --validate, or --force-gen> <PETSC args>\n");
+        PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> direct <J multiplier> <Bx Multiplier> <Bz Multiplier> <--verbose, --validate, --batch, or --force-gen> <PETSC args>\n");
+        PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> file <filename> <--verbose, --validate, --batch, or --force-gen> <PETSC args>\n");
         PetscPrintf(MPI_COMM_WORLD, "Please try again.\n");
         SlepcFinalize();
         return 0;
@@ -336,6 +338,7 @@ int main(int argc, char *argv[])
                 }
 
                 solveForArray.push_back({tempJ, tempBx, tempBz});
+                
                 lineCounter++;
             }
         }
@@ -440,10 +443,11 @@ int main(int argc, char *argv[])
     Eigenset eset;
     for (int i = 0; i < solveForArray.size(); i++)
     {
-
+        
         Js = solveForArray[i].J;
         Bxs = solveForArray[i].Bx;
         Bzs = solveForArray[i].Bz;
+        
         if(!batch){
             performSolve(Js, Bxs, Bzs, &J, &Bx, &Bz, verbose);
         }
