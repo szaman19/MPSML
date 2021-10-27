@@ -147,10 +147,3 @@ dmypy.json
 
 *.npy
 *.npz
-
-
-# Andy-related things
-*.DS_Store
-*.dynamicmatrix
-*.dynamicmatrixe
-*.eigenpair
