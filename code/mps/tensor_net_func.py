@@ -42,14 +42,19 @@ def instant_indices(num_independent_indices, i):
 
 #returns all the coefficients for a 2 X 2 network
 def net_2x2(A,B):
-    A.requires_grad = True
-    B.requires_grad = True
     AB=[A, B]
     C = []
     for i ,j ,k ,l in indices(4,2):  
         C.append(torch.einsum('zijab, zjicd, zklba, zlkdc->z', AB[i], AB[j], AB[k], AB[l]))
     ans=torch.stack(C)
     return ans.t()
+# def net_2x2(A,B):
+#     AB=[A, B]
+#     C = []
+#     for i ,j ,k ,l in indices(4,2):  
+#         C.append(torch.einsum('ijab, jicd, klba, lkdc', AB[i], AB[j], AB[k], AB[l]))
+#     ans=torch.stack(C)
+#     return ans.t()
 
 #returns the coefficients for a batch of 2 X 2 network given a spin configuration
 def batched_single_net_2x2(A,B, i):

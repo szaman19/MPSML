@@ -36,16 +36,19 @@ class MPS_autoencoder2d(nn.Module):
                                      )
     def encode(self, x):
         encoded = self.encoder(x)
-        temp = encoded.view(-1, 2,self.mps_size,self.mps_size)
-        spin_up, spin_down = torch.split(temp, 1, dim = 1)
+        temp = encoded.view(-1, 2,self.mps_size, self.mps_size, self.mps_size, self.mps_size)
+        sp_up, sp_down = torch.split(temp, 1, dim = 1)
+        spin_up = torch.squeeze(sp_up)
+        spin_down = torch.squeeze(sp_down)
         return spin_up, spin_down
      
     def decode(self, spin_up, spin_down, num_qubits):
-        return wave_func(spin_up, spin_down, num_qubits, 1000)
+        return tensor_net_func.wave_func(spin_up, spin_down, num_qubits, 1000)
     
     def forward(self, x, num_qubits):
         spin_up, spin_down = self.encode(x)
         gs = self.decode(spin_up, spin_down, num_qubits)
+        
         gs = gs / torch.norm(gs, dim = 1).view(-1,1)
         return gs    
     
@@ -54,15 +57,20 @@ def check_converged(prev_losses, cur_loss):
         
     return 1.05 * rolling_avg < cur_loss
 
-def get_dataset(fname, num_qubits, num_samples):
-    data = np.load(fname)
+def get_dataset(data, num_qubits, num_samples):
+    fields = np.empty(shape=(num_samples,3*num_qubits**2))
+    #_y = np.empty(shape=(num_samples,data.eigenvectorSize))
+    _y = []
+    for i in range(0, num_samples):
+        _y.append(data.eigenpairs[i].Eigenvector)
+        for j in range(0, num_qubits**2):
+            fields[i][j]=data.eigenpairs[i].J
+            fields[i][2*j-1]=data.eigenpairs[i].Bx
+            fields[i][3*j-1]=data.eigenpairs[i].Bz
     
-    _y = data['ground_state']
-    _x = data['fields'][:,[0, num_qubits, 2*num_qubits]]
-
-    _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
+    _x = fields[:,[0, num_qubits**2, 2*num_qubits**2]]
+    _num_qubits_column = num_qubits**2 * (np.ones((num_samples,1)))
     _data_x = np.hstack((_x, _num_qubits_column))
-    
     dataset = TensorDataset(torch.Tensor(_data_x),torch.Tensor(_y))
 
     return dataset 

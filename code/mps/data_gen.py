@@ -45,7 +45,7 @@ def parser(num_qubits):
     np.savez(str(num_qubits)+"_qubit_crit_data",ground_state = ground_states, fields = fields)
 
 def main():
-    sample_sites = [2,4]
+    sample_sites = [4]
     for each in tqdm(sample_sites):
         parser(each)
 main()

@@ -77,11 +77,12 @@ def get_dataset(fname, num_qubits, num_samples):
     data = np.load(fname)
     
     _y = data['ground_state']
+    print(data['ground_state'])
     _x = data['fields'][:,[0, num_qubits, 2*num_qubits]]
-
     _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
     _data_x = np.hstack((_x, _num_qubits_column))
-    
+    print(np.shape(_data_x))
+    print(np.shape(_y))
     dataset = TensorDataset(torch.Tensor(_data_x),torch.Tensor(_y))
 
     return dataset 
