@@ -34,9 +34,9 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat *JMat, Mat *BxMat
 
     MatAssemblyBegin(Sum, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY);
-    MatAYPX(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN);
-    MatAYPX(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN);
-    MatAYPX(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN);
+    MatAXPY(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN);
+    MatAXPY(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN);
+    MatAXPY(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN);
 
     /* Set up SLEPC */
     Vec imaginary, real;
@@ -66,6 +66,7 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat *JMat, Mat *BxMat
     PetscViewer vectorSaver;
     PetscViewerBinaryOpen(PETSC_COMM_WORLD, vectorFileName.c_str(), FILE_MODE_WRITE, &vectorSaver);
     VecView(real, vectorSaver);
+
     PetscViewerDestroy(&vectorSaver);
     VecDestroy(&imaginary);
     VecDestroy(&real);
@@ -106,10 +107,11 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
 
     MatAssemblyBegin(Sum, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY);
-    MatAYPX(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN);
-    MatAYPX(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN);
-    MatAYPX(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN);
-
+    MatAXPY(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN);
+    MatAXPY(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN);
+    MatAXPY(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN);
+    //std::cout << "bx: " << BxVal << ", bz:" << BzVal <<std::endl;
+    //MatView(Sum, PETSC_VIEWER_STDOUT_WORLD);
     /* Set up SLEPC */
     Vec imaginary, real;
     PetscScalar im, re;
@@ -121,7 +123,7 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
     MatCreateVecs(Sum, NULL, &real);
     EPSCreate(PETSC_COMM_WORLD, &solver);
     EPSSetOperators(solver, Sum, NULL);
-    EPSSetProblemType(solver, EPS_HEP);
+    EPSSetProblemType(solver, EPS_NHEP);
     EPSSetWhichEigenpairs(solver, EPS_SMALLEST_REAL);
     EPSSetFromOptions(solver);
     EPSSolve(solver);
@@ -138,6 +140,7 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
     PetscViewer vectorSaver;
     PetscViewerBinaryOpen(PETSC_COMM_WORLD, vectorFileName.c_str(), FILE_MODE_WRITE, &vectorSaver);
     VecView(real, vectorSaver);
+    
     PetscViewerDestroy(&vectorSaver);
     VecDestroy(&imaginary);
     VecDestroy(&real);
@@ -337,7 +340,7 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                solveForArray.push_back({tempJ, tempBx, tempBz});
+                solveForArray.push_back({.J = tempJ, .Bx =tempBx, .Bz = tempBz});
                 
                 lineCounter++;
             }
@@ -404,6 +407,8 @@ int main(int argc, char *argv[])
 
     generateBxMat(lattice_size, &Bx);
     generateJMat(lattice_size, &J);
+
+
     generateBzMat(lattice_size, &Bz);
     ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY);
     CHKERRQ(ierr);
@@ -458,9 +463,7 @@ int main(int argc, char *argv[])
 
     int thisNode;
     MPI_Comm_rank(MPI_COMM_WORLD, &thisNode);
-    std::cout << "batched == " << batch << std::endl;
     if(batch && thisNode == 0){
-        std::cout << "reached";
         eset.write("results.eigenset");
     }
 

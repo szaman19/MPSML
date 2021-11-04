@@ -107,10 +107,14 @@ int main(int argc, char* argv[]){
 
     std::ofstream output(fileName);
     if(output.is_open()){
-        for(double i = init_Bx; i < stop_Bx; i += ((stop_Bx - init_Bx)/ stopsBx)){
-            for(double j = init_Bz; j < stop_Bz; j += ((stop_Bz - init_Bz)/ stopsBz)){
+        double i = init_Bx;
+        for(int x = 0; x < stopsBx; x++){
+            double j = init_Bz;
+            for(int y = 0; y < stopsBz; y++){
                 output << J << "," << i << "," << j << std::endl;
+                j += ((stop_Bz - init_Bz)/ stopsBz);
             }
+            i += ((stop_Bx - init_Bx)/ stopsBx);
         }
 
         output.close();
