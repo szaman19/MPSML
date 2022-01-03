@@ -76,10 +76,21 @@ void generateJMat(PetscInt lattice_size, Mat *matrix)
     {
         std::vector<double> addedDiagonal;
 
-        if (q + 1 < (N + 1) && (q + 2) % lattice_size != 0)
-            generateAdjacentBeta(lattice_size, q, q + 1, addedDiagonal);
-        if (q + lattice_size < (N + 1))
-            generateAdjacentBeta(lattice_size, q, q + lattice_size, addedDiagonal);
+        PetscInt side_neighbor = q + 1;
+        if(q % lattice_size == 0){
+            side_neighbor -= lattice_size;
+        }
+
+        PetscInt down_neighbor = q + lattice_size;
+        if(down_neighbor > N){
+            down_neighbor = down_neighbor % N;
+        }
+
+        if(side_neighbor != q-1)
+            generateAdjacentBeta(lattice_size, q, side_neighbor, addedDiagonal);
+
+        if(down_neighbor != q - lattice_size)
+            generateAdjacentBeta(lattice_size, q, down_neighbor, addedDiagonal);
 
         bool writeMode = addedDiagonal.size() > diagonal.size();
         for (PetscInt i = 0; i < addedDiagonal.size(); i++)

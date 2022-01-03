@@ -62,7 +62,7 @@ class Eigenset:
         isSysB = self.isSysBigEndian()
         self.eigenvectorSize =int.from_bytes(file.read(4), "big" if bigEndianMode else "little")
         self.numberEigenvectors = int.from_bytes(file.read(4), "big" if bigEndianMode else "little")
-        
+        #print("Eigenvector size: " + repr(self.eigenvectorSize));
 
         for x in range(0, self.numberEigenvectors):
             tempJ = self.convertDouble( (struct.unpack('d', file.read(8))[0]), bigEndianMode, isSysB)

@@ -8,8 +8,8 @@ int main(int argc, char* argv[]){
     //Argument 2: Stops in Bx
     //Argument 3: Stops in Bz
     //Argument 4: Initial Bx
-    //Argument 5: Stop Bx
-    //Argument 6: Iitial Bz
+    //Argument 5: Initial Bz
+    //Argument 6: Stop Bx
     //Argument 7: Stop Bz;
     //Argument 8: file name
 
@@ -112,9 +112,9 @@ int main(int argc, char* argv[]){
             double j = init_Bz;
             for(int y = 0; y < stopsBz; y++){
                 output << J << "," << i << "," << j << std::endl;
-                j += ((stop_Bz - init_Bz)/ stopsBz);
+                j += ((stop_Bz - init_Bz)/ (stopsBz-1));
             }
-            i += ((stop_Bx - init_Bx)/ stopsBx);
+            i += ((stop_Bx - init_Bx)/ (stopsBx-1));
         }
 
         output.close();

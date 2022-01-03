@@ -11,6 +11,15 @@
 #include "checkmethods.cpp"
 #include "EigensetLib.cpp"
 
+
+#define PW(call) petsc_wrap(call, __LINE__)
+
+inline void petsc_wrap(int errcode, int line){
+    if(errcode){
+        PetscPrintf(PETSC_COMM_WORLD, "Line %d: function returned error code %d", line, errcode);
+    }
+}
+
 typedef struct triad_struct
 {
     double J;
@@ -56,6 +65,7 @@ void performSolve(double JVal, double BxVal, double BzVal, Mat *JMat, Mat *BxMat
     EPSGetConverged(solver, &nconv);
     EPSGetEigenpair(solver, 0, &re, &im, real, imaginary);
     EPSDestroy(&solver);
+    VecView(real, PETSC_VIEWER_STDOUT_WORLD);
 
     /*
         Real Eigenvalue - re
@@ -98,53 +108,90 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
     Mat Sum;
     
 
-    MatGetSize(*JMat, &sizeX, &sizeY);
-    MatCreate(PETSC_COMM_WORLD, &Sum);
-    MatSetSizes(Sum, PETSC_DECIDE, PETSC_DECIDE, sizeX, sizeY);
-    MatSetFromOptions(Sum);
-    MatSetUp(Sum);
-    MatZeroEntries(Sum);
+    PW(MatGetSize(*JMat, &sizeX, &sizeY));
+    PW(MatCreate(PETSC_COMM_WORLD, &Sum));
+    PW(MatSetSizes(Sum, PETSC_DECIDE, PETSC_DECIDE, sizeX, sizeY));
+    PW(MatSetFromOptions(Sum));
+    PW(MatSetUp(Sum));
+    PW(MatZeroEntries(Sum));
 
-    MatAssemblyBegin(Sum, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY);
-    MatAXPY(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN);
-    MatAXPY(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN);
-    MatAXPY(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN);
+    PW(MatAssemblyBegin(Sum, MAT_FINAL_ASSEMBLY));
+    PW(MatAssemblyEnd(Sum, MAT_FINAL_ASSEMBLY));
+    PW(MatAXPY(Sum, JVal, *JMat, DIFFERENT_NONZERO_PATTERN));
+    PW(MatAXPY(Sum, -1.0 * BxVal, *BxMat, DIFFERENT_NONZERO_PATTERN));
+    PW(MatAXPY(Sum, -1.0 * BzVal, *BzMat, DIFFERENT_NONZERO_PATTERN));
     //std::cout << "bx: " << BxVal << ", bz:" << BzVal <<std::endl;
     //MatView(Sum, PETSC_VIEWER_STDOUT_WORLD);
+    //std::cout << std::endl << std::endl;
     /* Set up SLEPC */
     Vec imaginary, real;
     PetscScalar im, re;
     EPS solver;
-    int nconv;
+    int nconv, size;
 
     /* Initialize vectors */
-    MatCreateVecs(Sum, NULL, &imaginary);
-    MatCreateVecs(Sum, NULL, &real);
-    EPSCreate(PETSC_COMM_WORLD, &solver);
-    EPSSetOperators(solver, Sum, NULL);
-    EPSSetProblemType(solver, EPS_NHEP);
-    EPSSetWhichEigenpairs(solver, EPS_SMALLEST_REAL);
-    EPSSetFromOptions(solver);
-    EPSSolve(solver);
-    EPSGetConverged(solver, &nconv);
-    EPSGetEigenpair(solver, 0, &re, &im, real, imaginary);
-    EPSDestroy(&solver);
+    PW(MatCreateVecs(Sum, NULL, &imaginary));
+    PW(MatCreateVecs(Sum, NULL, &real));
+    PW(EPSCreate(PETSC_COMM_WORLD, &solver));
+    PW(EPSSetOperators(solver, Sum, NULL));
+    PW(EPSSetProblemType(solver, EPS_HEP));
+    //PW(EPSSetType(solver,EPSLAPACK ));
+    PW(EPSSetWhichEigenpairs(solver, EPS_SMALLEST_REAL));
+    PW(EPSSetFromOptions(solver));
+    PW(EPSSolve(solver));
+    PW(EPSGetConverged(solver, &nconv));
+    
+    PW(EPSGetEigenpair(solver, 0, &re, &im, real, imaginary));
+    PW(VecGetSize(real, &size));
+    PetscPrintf(MPI_COMM_WORLD, "Bx = %f, Bz = %f, J = %f, Eigenvalue = %f, size = %d\n", BxVal, BzVal, JVal, re, size);
+    //VecView(real, PETSC_VIEWER_STDOUT_WORLD);
+
+    PW(EPSDestroy(&solver));
+
+
+
+    //Let's check if this is an actual eigenvector
+
+    Vec expected, actual;
+    PW(MatCreateVecs(Sum, NULL, &expected));
+    PW(MatCreateVecs(Sum, NULL, &actual));
+
+    //Do the mat-vec multiplication
+    PW(MatMult(Sum, real, actual));
+    PW(VecCopy(real, expected));
+    PW(VecScale(expected, re));
+
+    PW(VecAXPY(actual, -1.0, expected));
+    PW(VecAbs(actual));
+    PetscScalar tolerance = 0.0001;
+    PetscScalar sum = 0;
+    PW(VecSum(actual, &sum));
+
+    bool equal = sum < tolerance;
+    PetscPrintf(MPI_COMM_WORLD, "%s\n", (equal == true) ? "Eigenvector passes check" : "Eigenvector fails check");
+    
+
+
+
 
     /*
         Real Eigenvalue - re
         Real Eigenvector - real
     */
-    PetscPrintf(MPI_COMM_WORLD, "%f\n", re);
+    //PetscPrintf(MPI_COMM_WORLD, "%f\n", re);
+
+
+    
     std::string vectorFileName = "Eigenvector_" + std::to_string(sizeX) + ".petscvec";
     PetscViewer vectorSaver;
-    PetscViewerBinaryOpen(PETSC_COMM_WORLD, vectorFileName.c_str(), FILE_MODE_WRITE, &vectorSaver);
+    PW(PetscViewerBinaryOpen(PETSC_COMM_WORLD, vectorFileName.c_str(), FILE_MODE_WRITE, &vectorSaver));
     VecView(real, vectorSaver);
+    PW(PetscViewerDestroy(&vectorSaver));
     
-    PetscViewerDestroy(&vectorSaver);
-    VecDestroy(&imaginary);
-    VecDestroy(&real);
-    MatDestroy(&Sum);
+
+    PW(VecDestroy(&imaginary));
+    PW(VecDestroy(&real));
+    PW(MatDestroy(&Sum));
 
     /* Convert file to our format on node 0*/
 
@@ -169,6 +216,8 @@ static char help[] = "Create an Ising Hamiltonian with PETSC and solve it for th
 
 int main(int argc, char *argv[])
 {
+
+
     PetscErrorCode ierr;
     ierr = SlepcInitialize(&argc, &argv, (char *)0, help);
     if (ierr)
@@ -408,7 +457,7 @@ int main(int argc, char *argv[])
     generateBxMat(lattice_size, &Bx);
     generateJMat(lattice_size, &J);
 
-
+    
     generateBzMat(lattice_size, &Bz);
     ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY);
     CHKERRQ(ierr);
@@ -422,7 +471,7 @@ int main(int argc, char *argv[])
     CHKERRQ(ierr);
     ierr = MatAssemblyEnd(Bz, MAT_FINAL_ASSEMBLY);
     CHKERRQ(ierr);
-
+    MatView(J, PETSC_VIEWER_STDOUT_WORLD);
 
     if(doValidate){
         PetscPrintf(MPI_COMM_WORLD, "Validation Results:\n");

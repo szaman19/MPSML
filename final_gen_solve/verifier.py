@@ -1,8 +1,12 @@
 import EigensetReader
 import numpy as np
 import math
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator
 
 def seq_to_magnetization(arr_seq, num_qubits):
+    
     mag_vec = []
     for elem in arr_seq:
         magnetization = 0
@@ -26,77 +30,87 @@ def seq_gen(num_q):
                 temp.append(i+each)
         return temp 
 
+def showFig(mat, xmin, xmax, xnum, ymin, ymax, ynum):
+    X = np.linspace(xmin, xmax, xnum)
+    Y = np.linspace(ymin, ymax, ynum)
+    X, Y = np.meshgrid(X,Y)
 
-def verify(file_str):
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+    surf = ax.plot_surface(X, Y, mat, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
+    
+    ax.set_zlim(0, 1.01)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    # A StrMethodFormatter is used automatically
+    # ax.zaxis.set_major_formatter('{x:.02f}')
+
+    # Add a color bar which maps values to colors.
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    plt.savefig("plot.png", format="png")
+
+
+def verify(file_str, print_surface_plot):
     e = EigensetReader.Eigenset()
     e.read(file_str)
-    num_qbit = e.eigenvectorSize
-    num_qbit_2 = math.sqrt(num_qbit)
+    num_eigenvectors = e.numberEigenvectors
+    eigenvectorSize = e.eigenvectorSize
+    #Find the number of cubits
+    #2^(number of qbits)^2
     
-    num_evec = e.numberEigenvectors
-    print(num_evec)
-    print(num_qbit)
-    wavefuncs = np.zeros(( num_evec, num_qbit))
-    for i in range(0, num_evec):
-        for j in range (0, num_qbit ):
-            wavefuncs[i,j] = e.eigenpairs[i].Eigenvector[j] 
+    num_qbits_raw = math.sqrt(math.log2(eigenvectorSize))
+
+    num_qbits = round(num_qbits_raw)
+    print("Got " + repr(num_qbits) + " qbits")
+    magvec = seq_to_magnetization(seq_gen(num_qbits**2), num_qbits**2)
+
+    #Check what BX and BZ values we have in the eigenset. This will help us output the magnetization values later.
+    BxValues = []
+    BzValues = []
+
+    for eigenpair in e.eigenpairs:
+        if(eigenpair.Bx not in BxValues ):
+            BxValues.append(eigenpair.Bx)
+        if(eigenpair.Bz not in BzValues):
+            BzValues.append(eigenpair.Bz)
     
-    magvec = seq_to_magnetization(seq_gen(num_qbit_2), num_qbit_2)
-    print(magvec)
-    arr = np.matmul(wavefuncs**2, magvec)
+    BxValues.sort()
+    BzValues.sort()
 
-    for i in range (0, num_evec):
-        print( repr(e.eigenpairs[i].Bx) + ", " + repr(e.eigenpairs[i].Bz) + ", " + repr(arr[i]))
+    magnetization_matrix = np.zeros((len(BzValues),len(BxValues)))
 
-def verify_surface_plot(file_str):
-    e = EigensetReader.Eigenset()
-    e.read(file_str)
-    num_qbit = e.eigenvectorSize
-    num_qbit_2 = math.sqrt(num_qbit)
-    
-    num_evec = e.numberEigenvectors
-    Bxs = []
-    Bzs = []
-    for i in range(0, num_evec):
-        if(e.eigenpairs[i].Bx not in Bxs): Bxs.append(e.eigenpairs[i].Bx)
-        if(e.eigenpairs[i].Bz not in Bzs): Bzs.append(e.eigenpairs[i].Bz)
+    for eigenpair in e.eigenpairs:
+        eigenvector_np = np.array(eigenpair.Eigenvector)
+        magnetization = np.dot(magvec, eigenvector_np**2)
+        index_i = BzValues.index(eigenpair.Bz)
+        index_j = BxValues.index(eigenpair.Bx)
+        magnetization_matrix[index_i][index_j] = magnetization
 
-    Bxs.sort()
-    Bzs.sort()
+    if(print_surface_plot == True):
+        #Print Bz values along the top
 
-    wavefuncs = np.zeros(( num_evec, num_qbit))
-    for i in range(0, num_evec):
-        for j in range (0, num_qbit ):
-            wavefuncs[i,j] = e.eigenpairs[i].Eigenvector[j] 
-
-    magvec = seq_to_magnetization(seq_gen(num_qbit_2), num_qbit_2)
-    arr = np.matmul(wavefuncs**2, magvec)
-
-    returnarr = [[0 for i in range(0,len(Bxs))] for j in range(0, len(Bzs))]
-
-    for i in range (0, num_evec):
-        index1 = Bzs.index(e.eigenpairs[i].Bz)
-        index2 = Bxs.index(e.eigenpairs[i].Bx)
-        returnarr[index1][index2] = arr[i]
-
-    #print the top indices
-    print(",", end = '')
-    for x in range(0, len(Bxs)):
-        print(repr(Bxs[x]) + ",", end = '')
-    print()
-
-    for x in range(0, len(Bzs)):
-        print(repr(Bzs[x]) + ",", end='')
-        for y in range(0, len(Bxs)):
-            print(repr(returnarr[x][y]) + ",", end='')
+        for BxVal in BxValues:
+            print("," + repr(BxVal), end='')
         print()
+
+        #Print the meat and cheese
+        for i in range(0, len(BzValues)):
+            print(repr(BzValues[i]), end='')
+            for j in range(0, len(BxValues)):
+                print("," + repr(magnetization_matrix[i][j]), end='')
+            
+            print()
+    
+    showFig(magnetization_matrix,  BzValues[0], BzValues[len(BzValues)-1], len(BzValues), BxValues[0], BxValues[len(BxValues)-1], len(BxValues) )
+
+    return magnetization_matrix
 
 
 def main():
     filename = "results.eigenset"
     
-    x = verify_surface_plot(filename)
-    print(x)
+    x = verify(filename, True)
+    #print(x)
 
     
 
