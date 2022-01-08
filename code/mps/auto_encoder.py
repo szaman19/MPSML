@@ -63,7 +63,6 @@ class MPS_autoencoder(nn.Module):
     def forward(self, x, num_qubits):
         spin_up, spin_down = self.encode(x)
         gs = self.decode(spin_up, spin_down, num_qubits)
-        print(gs.shape)
         gs = gs / torch.norm(gs, dim = 1).view(-1,1)
         return gs
 
@@ -77,14 +76,26 @@ def get_dataset(fname, num_qubits, num_samples):
     data = np.load(fname)
     
     _y = data['ground_state']
-    print(data['ground_state'])
     _x = data['fields'][:,[0, num_qubits, 2*num_qubits]]
     _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
     _data_x = np.hstack((_x, _num_qubits_column))
-    print(np.shape(_data_x))
-    print(np.shape(_y))
     dataset = TensorDataset(torch.Tensor(_data_x),torch.Tensor(_y))
 
+    return dataset 
+
+def get_dataset_active(fname, num_qubits, num_samples, data_pts):
+    data = np.load(fname)
+    
+    _x = data['fields'][:,[0, num_qubits, 2*num_qubits]]
+    _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
+    _data_x = np.hstack((_x, _num_qubits_column))
+    
+    y=[]
+    x=[]
+    for i in data_pts:
+        y.append(data['ground_state'][i])
+        x.append(_data_x[i])
+    dataset = TensorDataset(torch.Tensor(x),torch.Tensor(y))
     return dataset 
 
 def print_errors(dic, epoch):
