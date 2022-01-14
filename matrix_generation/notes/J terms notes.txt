@@ -1,0 +1,20 @@
+J terms
+Diagonal again
+Appears to be N on diagonal
+
+4
+0
+0
+0
+0
+0
+-4
+0
+0
+-4
+0
+0
+0
+0
+0
+4

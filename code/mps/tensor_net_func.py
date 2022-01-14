@@ -98,6 +98,7 @@ def single_net_3x3(A,B, i):
 
 
 ##################################################### 4 X 4 ##########################################################################
+
 def net_4x4(A,B, samples):
     A.requires_grad = True
     B.requires_grad = True
@@ -113,6 +114,7 @@ def net_4x4(A,B, samples):
         C.append(torch.einsum('zehilmpqt, zfejinmrq, zgfkjonsr, zhglkpots-> z', X, Y, Z, W))
     ans=torch.stack(C)
     return ans.t()
+
 
 def batched_single_net_4x4(A,B, CI):
     A.requires_grad = True
@@ -157,6 +159,7 @@ def net_5x5(A,B, samples):
         C.append(torch.einsum('zgpiqkrmsot, zgpiqkrmsot->z', XYZU, V))
     ans=torch.stack(C)
     return ans.t()
+
 
 def batched_single_net_5x5(A,B, CI):
     A.requires_grad = True
