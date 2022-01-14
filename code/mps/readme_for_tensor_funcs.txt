@@ -16,7 +16,8 @@ takes i: the index of the desired coefficient to be translated to binary format
 Used in all the single net functions
 
 net_NxN:
-Returns a list of coefficients
+
+Returns a tensor of coefficients
 For 2x2 and 3x3, returns all coefficients
 takes A: the spin up tensor
 takes B: the spin down tensor

@@ -6,7 +6,7 @@ from torch.utils.data import TensorDataset, DataLoader, random_split
 import matplotlib.pyplot as plt 
 
 import pickle
-
+import tensor_net_func
 
 def seq_gen(num_q):
     if num_q == 2:
@@ -66,6 +66,7 @@ class MPS_autoencoder(nn.Module):
         gs = gs / torch.norm(gs, dim = 1).view(-1,1)
         return gs
 
+
 def check_converged(prev_losses, cur_loss):
     rolling_avg = (sum(prev_losses) / len(prev_losses) )
         
@@ -76,12 +77,25 @@ def get_dataset(fname, num_qubits, num_samples):
     
     _y = data['ground_state']
     _x = data['fields'][:,[0, num_qubits, 2*num_qubits]]
+    _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
+    _data_x = np.hstack((_x, _num_qubits_column))
+    dataset = TensorDataset(torch.Tensor(_data_x),torch.Tensor(_y))
 
+    return dataset 
+
+def get_dataset_active(fname, num_qubits, num_samples, data_pts):
+    data = np.load(fname)
+    
+    _x = data['fields'][:,[0, num_qubits, 2*num_qubits]]
     _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
     _data_x = np.hstack((_x, _num_qubits_column))
     
-    dataset = TensorDataset(torch.Tensor(_data_x),torch.Tensor(_y))
-
+    y=[]
+    x=[]
+    for i in data_pts:
+        y.append(data['ground_state'][i])
+        x.append(_data_x[i])
+    dataset = TensorDataset(torch.Tensor(x),torch.Tensor(y))
     return dataset 
 
 def print_errors(dic, epoch):
