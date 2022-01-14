@@ -78,7 +78,7 @@ void performSolveEigenSet(double JVal, double BxVal, double BzVal, Mat *JMat, Ma
     PW(PetscViewerBinaryOpen(PETSC_COMM_WORLD, vectorFileName.c_str(), FILE_MODE_WRITE, &vectorSaver));
     VecView(real, vectorSaver);
     PW(PetscViewerDestroy(&vectorSaver));
-    
+
     PW(VecDestroy(&imaginary));
     PW(VecDestroy(&real));
     PW(MatDestroy(&Sum));
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
     {
         PetscPrintf(MPI_COMM_WORLD, "This program requires 3 arguments\n");
         PetscPrintf(MPI_COMM_WORLD, "Usage: ./matgen <Lattice Size in 1D> <filename> <PETSC args>\n");
-        PetscPrintf(MPI_COMM_WORLD, "where filename is a CSV file in the format <J value>, <Bx value>, <Bz value> which you can generate with the gencsv utility.")
+        PetscPrintf(MPI_COMM_WORLD, "where filename is a CSV file in the format <J value>, <Bx value>, <Bz value> which you can generate with the gencsv utility.");
         PetscPrintf(MPI_COMM_WORLD, "Please try again.\n");
         SlepcFinalize();
         return 0;

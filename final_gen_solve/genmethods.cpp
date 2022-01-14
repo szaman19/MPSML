@@ -155,8 +155,7 @@ PetscInt findLogOfTwo(PetscInt input)
 {
     PetscInt counter = 0;
     input = (input > 0) ? input : -1 * input;
-    while (input / 2 != 0)
-    {
+    while (input / 2 != 0){
         counter++;
         input = input / 2;
     }
@@ -170,8 +169,7 @@ bool isPowerOfTwo(PetscInt input)
         return true;
     PetscInt test = 1;
 
-    while (test <= input)
-    {
+    while (test <= input){
         if (test == input)
             return true;
         test *= 2;
@@ -195,16 +193,12 @@ void generateBxMat(PetscInt lattice_size, Mat *matrix)
     {
         std::vector<PetscInt> colIndex;
         std::vector<double> row;
-
         
-        for (PetscInt j = 0; j < i; j++)
-        {
-            if (isPowerOfTwo(i - j ))
-            {
+        for (PetscInt j = 0; j < i; j++){
+            if (isPowerOfTwo(i - j )){
                 //J determines if we insert a one or a zero.
                 //One pattern: 1..0..1..
                 PetscInt value = (((( j / (i-j)) + 1) % 2) == 0) ? 0 : 1;
-               
                 if(value == 1 ){
                     row.push_back(1);
                     colIndex.push_back(j);
@@ -214,11 +208,8 @@ void generateBxMat(PetscInt lattice_size, Mat *matrix)
 
         }
         
-        for (PetscInt j = i; j < matrixDim; j++)
-        {
-            
-            if (isPowerOfTwo(j - i ))
-            {
+        for (PetscInt j = i; j < matrixDim; j++){
+            if (isPowerOfTwo(j - i )){
                 //J determines if we insert a one or a zero.
                 //One pattern: 1..0..1..
                 PetscInt value = (((( i / (j-i)) + 1) % 2) == 0) ? 0 : 1;
@@ -228,13 +219,9 @@ void generateBxMat(PetscInt lattice_size, Mat *matrix)
                     colIndex.push_back(j);
                 }
             }
-            
-            
         }
-        //MatSetValues(Mat mat,PetscInt m,const PetscInt idxm[],PetscInt n,const PetscInt idxn[],const PetscScalar v[],InsertMode addv)
         PetscInt rows_to_set[] = {i};
         MatSetValues(*matrix, 1, &rows_to_set[0], colIndex.size(), colIndex.data(), row.data(), INSERT_VALUES);
-
             
     }
 }
