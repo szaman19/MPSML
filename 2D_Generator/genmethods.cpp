@@ -4,9 +4,13 @@ inline PetscInt getMatrixDim(PetscInt lattice_size)
 }
 
 inline PetscInt findLogOfTwo(PetscInt input)
-{
-	while()return (!(input & (input - 1 )) && input);
+{      
+    PetscInt test = 1;
+    counter = 1;  
+    while (test < input) {test << 1; counter++;}
+    return counter;
 }
+
 
 bool isPowerOfTwo(PetscInt input)
 {
