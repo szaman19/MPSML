@@ -29,7 +29,6 @@ class IsingEigenpair{
         this->Bz = Bz;
         this->Eigenvalue = Eigenvalue;
         this->Eigenvector = Eigenvector;
-
     }
 
 
@@ -47,7 +46,7 @@ class Eigenset{
     std::vector<IsingEigenpair> eigenpairs;
 
     void write(std::string fileName){
-        std::cout << "number of values: " << numberEigenvectors << "\n";
+        std::cout << "eigenvector size: " << eigenvectorSize << "\n";
         int format = 1;
         if(!hasCheckedEndian) detectEndianess();
         int isBigEndianInt = (isBigEndian) ? 1 : 0;
@@ -106,10 +105,10 @@ class Eigenset{
         swapEndianness((char*) &eigenvectorSize, sizeof(int), false);
 
 
-        std::cout << format << std::endl;
-        std::cout << isBigEndianInt << std::endl;
-        std::cout << numberEigenvectors << std::endl;
-        std::cout << eigenvectorSize << std::endl;
+        // std::cout << format << std::endl;
+        // std::cout << isBigEndianInt << std::endl;
+        // std::cout << numberEigenvectors << std::endl;
+        // std::cout << eigenvectorSize << std::endl;
 
         if(isBigEndianInt == 1) bigEndianMode = true;
 
@@ -133,10 +132,10 @@ class Eigenset{
                 inputFile.read((char*) &t, sizeof(double));
                 swapEndianness((char*) &t, sizeof(double), bigEndianMode);
                 tempVecVals.push_back(t);
-                std::cout << t << std::endl;
+                //std::cout << t << std::endl;
             }
             eigenpairs.push_back(IsingEigenpair(tempJ, tempBx, tempBz, tempEV, tempVecVals));
-            std::cout << tempJ << " " << tempBx << " " << tempBz << " " << tempEV << " " << std::endl << std::endl;
+            //std::cout << tempJ << " " << tempBx << " " << tempBz << " " << tempEV << " " << std::endl << std::endl;
         }
 
     }

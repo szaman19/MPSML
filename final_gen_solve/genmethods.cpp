@@ -22,29 +22,22 @@ void generateAdjacentBeta(PetscInt lattice_size, PetscInt i, PetscInt j, std::ve
     //q and q+1
     output[0] = 1.0;
 
-    for (PetscInt x = 1; x < N + 1; x++)
-    {
+    for (PetscInt x = 1; x < N + 1; x++){
         PetscInt twoRaisedX = 1;
-        for (int i = 0; i < x; i++)
-        {
+        for (int i = 0; i < x; i++){
             twoRaisedX *= 2;
         }
 
         PetscInt thisStep = matdim / (twoRaisedX / 2);
         PetscInt nextStep = matdim / twoRaisedX;
 
-        if (x == i || x == j)
-        {
-
-            for (PetscInt i = 0; i < output.size(); i += thisStep)
-            {
+        if (x == i || x == j){
+            for (PetscInt i = 0; i < output.size(); i += thisStep){
                 output[i + nextStep] = -1.0 * output[i];
             }
         }
-        else
-        {
-            for (PetscInt i = 0; i < output.size(); i += thisStep)
-            {
+        else{
+            for (PetscInt i = 0; i < output.size(); i += thisStep){
                 output[i + nextStep] = output[i];
             }
         }
@@ -52,8 +45,7 @@ void generateAdjacentBeta(PetscInt lattice_size, PetscInt i, PetscInt j, std::ve
     bool writeMode = false;
     if (toAdd.size() < output.size())
         writeMode = true;
-    for (PetscInt i = 0; i < output.size(); i++)
-    {
+    for (PetscInt i = 0; i < output.size(); i++){
         if (writeMode)
             toAdd.push_back(output[i]);
         else
@@ -67,19 +59,28 @@ void generateJMat(PetscInt lattice_size, Mat *matrix)
     PetscInt N = lattice_size * lattice_size;
     std::vector<double> diagonal;
     std::vector<PetscInt> diagonal_map;
-    for (PetscInt i = 0; i < matrixDim; i++)
-    {
+    for (PetscInt i = 0; i < matrixDim; i++){
         diagonal_map.push_back(i);
     }
 
-    for (PetscInt q = 1; q < N + 1; q++)
-    {
+    for (PetscInt q = 1; q < N + 1; q++){
         std::vector<double> addedDiagonal;
 
-        if (q + 1 < (N + 1) && (q + 2) % lattice_size != 0)
-            generateAdjacentBeta(lattice_size, q, q + 1, addedDiagonal);
-        if (q + lattice_size < (N + 1))
-            generateAdjacentBeta(lattice_size, q, q + lattice_size, addedDiagonal);
+        PetscInt side_neighbor = q + 1;
+        if(q % lattice_size == 0){
+            side_neighbor -= lattice_size;
+        }
+
+        PetscInt down_neighbor = q + lattice_size;
+        if(down_neighbor > N){
+            down_neighbor = down_neighbor % N;
+        }
+
+        if(side_neighbor != q-1)
+            generateAdjacentBeta(lattice_size, q, side_neighbor, addedDiagonal);
+
+        if(down_neighbor != q - lattice_size)
+            generateAdjacentBeta(lattice_size, q, down_neighbor, addedDiagonal);
 
         bool writeMode = addedDiagonal.size() > diagonal.size();
         for (PetscInt i = 0; i < addedDiagonal.size(); i++)
@@ -90,9 +91,6 @@ void generateJMat(PetscInt lattice_size, Mat *matrix)
                 diagonal[i] += addedDiagonal[i];
         }
     }
-
-    //write to Petsc
-    //MatSetValues(Mat mat,PetscInt m,const PetscInt idxm[],PetscInt n,const PetscInt idxn[],const PetscScalar v[],InsertMode addv)
 
     Vec v;
 
@@ -109,16 +107,14 @@ void generateJMat(PetscInt lattice_size, Mat *matrix)
 std::vector<double> generateBzPattern(PetscInt lattice_size, PetscInt level, double input)
 {
     PetscInt N = lattice_size * lattice_size;
-    if (level == N)
-    {
+    if (level == N){
         std::vector<double> returner;
         returner.push_back(input);
         returner.push_back(input - 2);
 
         return returner;
     }
-    else
-    {
+    else{
         std::vector<double> returner;
 
         std::vector<double> r1 = generateBzPattern(lattice_size, level + 1, input);
@@ -140,8 +136,7 @@ void generateBzMat(PetscInt lattice_size, Mat *matrix)
     double start = N;
     std::vector<double> diagonal = generateBzPattern(lattice_size, 1, N);
     std::vector<PetscInt> diagonal_map;
-    for (PetscInt i = 0; i < matrixDim; i++)
-    {
+    for (PetscInt i = 0; i < matrixDim; i++){
         diagonal_map.push_back(i);
     }
     Vec v;
@@ -160,8 +155,7 @@ PetscInt findLogOfTwo(PetscInt input)
 {
     PetscInt counter = 0;
     input = (input > 0) ? input : -1 * input;
-    while (input / 2 != 0)
-    {
+    while (input / 2 != 0){
         counter++;
         input = input / 2;
     }
@@ -175,8 +169,7 @@ bool isPowerOfTwo(PetscInt input)
         return true;
     PetscInt test = 1;
 
-    while (test <= input)
-    {
+    while (test <= input){
         if (test == input)
             return true;
         test *= 2;
@@ -200,16 +193,12 @@ void generateBxMat(PetscInt lattice_size, Mat *matrix)
     {
         std::vector<PetscInt> colIndex;
         std::vector<double> row;
-
         
-        for (PetscInt j = 0; j < i; j++)
-        {
-            if (isPowerOfTwo(i - j ))
-            {
+        for (PetscInt j = 0; j < i; j++){
+            if (isPowerOfTwo(i - j )){
                 //J determines if we insert a one or a zero.
                 //One pattern: 1..0..1..
                 PetscInt value = (((( j / (i-j)) + 1) % 2) == 0) ? 0 : 1;
-               
                 if(value == 1 ){
                     row.push_back(1);
                     colIndex.push_back(j);
@@ -219,11 +208,8 @@ void generateBxMat(PetscInt lattice_size, Mat *matrix)
 
         }
         
-        for (PetscInt j = i; j < matrixDim; j++)
-        {
-            
-            if (isPowerOfTwo(j - i ))
-            {
+        for (PetscInt j = i; j < matrixDim; j++){
+            if (isPowerOfTwo(j - i )){
                 //J determines if we insert a one or a zero.
                 //One pattern: 1..0..1..
                 PetscInt value = (((( i / (j-i)) + 1) % 2) == 0) ? 0 : 1;
@@ -233,13 +219,9 @@ void generateBxMat(PetscInt lattice_size, Mat *matrix)
                     colIndex.push_back(j);
                 }
             }
-            
-            
         }
-        //MatSetValues(Mat mat,PetscInt m,const PetscInt idxm[],PetscInt n,const PetscInt idxn[],const PetscScalar v[],InsertMode addv)
         PetscInt rows_to_set[] = {i};
         MatSetValues(*matrix, 1, &rows_to_set[0], colIndex.size(), colIndex.data(), row.data(), INSERT_VALUES);
-
             
     }
 }
