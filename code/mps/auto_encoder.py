@@ -84,7 +84,7 @@ def get_dataset(fname, num_qubits, num_samples):
     return dataset 
 
 def get_dataset_active(fname, num_qubits, num_samples, data_pts):
-    data = np.load(fname)
+    data = np.load(fname, allow_pickle=True)
     
     _x = data['fields'][:,[0, num_qubits, 2*num_qubits]]
     _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
