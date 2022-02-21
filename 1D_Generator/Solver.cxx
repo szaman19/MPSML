@@ -17,9 +17,14 @@ void Solver<T>::append_to_file(std::string fpath) const
 	DenseMatrix<T> vecs = this->eigenvectors();
 
 	if (vecs(0,0) < 0 ) vecs *= -1;
-
-	file.write((char*)this->eigenvalues().data(), this->eigenvalues().size() * sizeof(T));
-	file.write((char*)vecs.data(), vecs.size() * sizeof(T));
+    
+	double eig_val[1] = {this->eigenvalues().data()[0]};
+    file.write((char*)eig_val, sizeof(T));
+	file.write((char*)vecs.row(0).data(), vecs.row(0).size() * sizeof(T));
+	/*file.write((char*)this->eigenvalues().data(), this->eigenvalues().size() * sizeof(T));
+	file.write((char*)vecs.data(), vecs.size() * sizeof(T));*/
+    
+    
 }
 
 template<typename T>

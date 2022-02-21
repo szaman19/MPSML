@@ -95,7 +95,7 @@ def get_dataset_active(fname, num_qubits, num_samples, data_pts):
     for i in data_pts:
         y.append(data['ground_state'][i])
         x.append(_data_x[i])
-    dataset = TensorDataset(torch.Tensor(x),torch.Tensor(y))
+    dataset = TensorDataset(torch.Tensor(np.array(x)),torch.Tensor(np.array(y)))
     return dataset 
 
 def print_errors(dic, epoch):
@@ -114,7 +114,7 @@ def mps_fit(mps_size,
             val_loaders,
             val_sizes,
             avg_threshold = 10,
-            print_interval = 2):
+            print_interval = 1):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MPS_autoencoder(mps_size = mps_size).to(device)

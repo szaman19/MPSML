@@ -22,9 +22,7 @@ def parser(num_qubits):
 
     format_specificer = "".join(['d' for i in range(num_doubles)])
     format_specificer = "@"+format_specificer
-
     data = data_file.read()
-
     data = struct.iter_unpack(format_specificer, data)
 
 
@@ -45,7 +43,7 @@ def parser(num_qubits):
     np.savez(str(num_qubits)+"_qubit_crit_data",ground_state = ground_states, fields = fields)
 
 def main():
-    sample_sites = [2,4,6,7,8,9]
+    sample_sites = [7]
     for each in tqdm(sample_sites):
         parser(each)
 main()
