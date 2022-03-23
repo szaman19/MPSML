@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import pickle
 import tensor_net_func
 
+
+
 def seq_gen(num_q):
     if num_q == 2:
         return ['00','01', '10','11']
@@ -63,7 +65,10 @@ class MPS_autoencoder(nn.Module):
     def forward(self, x, num_qubits):
         spin_up, spin_down = self.encode(x)
         gs = self.decode(spin_up, spin_down, num_qubits)
-        gs = gs / torch.norm(gs, dim = 1).view(-1,1)
+        if(np.ndim(gs)>1):
+            gs = gs / torch.norm(gs, dim = 1).view(-1,1)
+        else:
+            gs = gs / torch.norm(gs).view(-1,1)
         return gs
 
 
@@ -108,17 +113,17 @@ def print_errors(dic, epoch):
 
     print(print_string)
 
-def mps_fit(mps_size,
+def mps_fit(device,
+            model,
+            optimizer,
+            mps_size,
             train_loaders,
             train_sizes,
             val_loaders,
             val_sizes,
             avg_threshold = 10,
-            print_interval = 1):
+            print_interval = 2):
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = MPS_autoencoder(mps_size = mps_size).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     loss_func = nn.MSELoss()
 
     train_errors = {}
@@ -138,7 +143,6 @@ def mps_fit(mps_size,
     while True:
         counter +=1
         epoch_training_error = 0 
-        
         model.train()
         for N, train_loader in enumerate(train_loaders):
             
@@ -157,7 +161,6 @@ def mps_fit(mps_size,
             train_errors[sys_size].append(temp)
             epoch_training_error += temp 
         
-    
         epoch_val_error = 0
         model.eval()
         with torch.no_grad():
