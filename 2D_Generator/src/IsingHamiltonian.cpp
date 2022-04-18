@@ -23,7 +23,13 @@ IsingHamiltonian::IsingHamiltonian(int num_qbits, debug_flags flags) {
 	generate_bz();
 	auto end_bz_generation = std::chrono::high_resolution_clock::now();
 	vprint("Generating J\n");
-	generate_j();
+	if(flags.generate_1d){
+		generate_j_1d();
+	}
+	else{
+		generate_j();
+	}
+	
 	vprint("Finished matrix generation.\n") auto end_j_generation = std::chrono::high_resolution_clock::now();
 	bx_generation_time                                            = std::chrono::duration_cast<std::chrono::milliseconds>(end_bx_generation - start_generation).count();
 	bz_generation_time                                            = std::chrono::duration_cast<std::chrono::milliseconds>(end_bz_generation - end_bx_generation).count();
@@ -48,7 +54,7 @@ IsingHamiltonian::~IsingHamiltonian() {
 	PW(MatDestroy(&Bz));
 	PW(MatDestroy(&J));
 }
-ß
+
 void IsingHamiltonian::solve_for_eigenvector(double j_scalar, double bx_scalar, double bz_scalar) {
 	// auto start_solve_time = std::chrono::high_resolution_clock::now();
 	Mat Sum;
@@ -178,6 +184,37 @@ void IsingHamiltonian::generate_j() {
 }
 
 void IsingHamiltonian::generate_j_1d() {
+	PW(MatCreate(PETSC_COMM_WORLD, &J));
+	PW(MatSetSizes(J, PETSC_DECIDE, PETSC_DECIDE, num_diagonal_terms, num_diagonal_terms));
+	PW(MatSetFromOptions(J));
+	PW(MatMPIAIJSetPreallocation(J, 1, NULL, 0, NULL));
+
+	Vec diagonal;
+	PW(VecCreate(PETSC_COMM_WORLD, &diagonal));
+	PW(VecSetSizes(diagonal, PETSC_DECIDE, num_diagonal_terms));
+	PW(VecSetFromOptions(diagonal));
+	PW(VecZeroEntries(diagonal));
+	PW(VecAssemblyBegin(diagonal));
+	PW(VecAssemblyEnd(diagonal));
+
+	for (PetscInt q = 1; q < num_qbits + 1; q++) {
+		PetscInt side_neighbor = q + 1;
+		if (q == num_qbits) {
+			side_neighbor = 1;
+		}
+		generate_adjacent_interaction_petsc(q, side_neighbor, &diagonal);
+	}
+
+	int vecsize, matsize;
+	VecGetSize(diagonal, &vecsize);
+
+	PW(MatDiagonalSet(J, diagonal, INSERT_VALUES));
+	PW(VecDestroy(&diagonal));
+
+	PW(MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY));
+	PW(MatAssemblyEnd(J, MAT_FINAL_ASSEMBLY));
+
+
 }
 
 void IsingHamiltonian::generate_bz() {

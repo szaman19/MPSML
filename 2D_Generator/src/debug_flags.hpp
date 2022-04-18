@@ -12,6 +12,7 @@ class debug_flags{
     double eigenvalue_tolerance;
     bool verbose_mode;
     double eigenvector_output_tolerance;
+    bool generate_1d;
 
 
     debug_flags(){
@@ -24,6 +25,7 @@ class debug_flags{
         eigenvalue_tolerance = 0.000001;
         verbose_mode = false;
         eigenvector_output_tolerance = 0.00000001;
+        generate_1d = false;
         
     }
 };
