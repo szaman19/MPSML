@@ -70,6 +70,7 @@ class MPS_autoencoder(nn.Module):
         else:
             gs = gs / torch.norm(gs).view(-1,1)
         return gs
+    
 
 
 def check_converged(prev_losses, cur_loss):
@@ -95,11 +96,9 @@ def get_dataset_active(fname, num_qubits, num_samples, data_pts):
     _num_qubits_column = num_qubits * (np.ones((num_samples,1)))
     _data_x = np.hstack((_x, _num_qubits_column))
     
-    y=[]
-    x=[]
-    for i in data_pts:
-        y.append(data['ground_state'][i])
-        x.append(_data_x[i])
+    y = data['ground_state'][data_pts]
+    x = _data_x[data_pts]
+
     dataset = TensorDataset(torch.Tensor(np.array(x)),torch.Tensor(np.array(y)))
     return dataset 
 
@@ -173,9 +172,6 @@ def mps_fit(device,
                     gs = model(fields.to(device), sys_size)
                     loss = loss_func(gs, wf.to(device))
                     temp += loss.item()
-                    if (sys_size > 8):
-                        print(gs[0])
-                        print(gs[-1])
                 temp = (temp * 2 **(sys_size) )/ (len(val_loader))
                 val_errors[sys_size].append(temp)
                 epoch_val_error += temp 

@@ -63,6 +63,11 @@ def mean_error(predicted, truth):
     diffs = abs((predicted+1) - (truth+1))/(truth+1)
     return np.mean(np.mean(diffs, axis=1)) 
 
+def max_error(predicted, truth):
+    diffs = abs((predicted+1) - (truth+1))/(truth+1)
+    array = np.mean(diffs, axis=1)
+    return np.sort(array)[np.size(array)-1]
+
 def error_data(mag, mag_t):
     diffs = abs(((mag+1) - (mag_t+1))/(mag_t+1))
     return np.mean(diffs, axis=1)
@@ -77,86 +82,78 @@ def print_points(data1, qubits, error_points):
     print(points)
     
 
-def expand_pool(old_pool, error_points, max_pool_size, add_pts):
-    added = 0
-    wait = []
+def expand_pool(old_pool, error_points, max_pool_size):
     for i in error_points:
+        num = int(i)
         if(i not in old_pool):
             bisect.insort(old_pool,i)
-            added = added+1      
         else:
-            wait.append(i)
+            Bz_low_num = num-1
+            Bz_high_num= num+1
+            Bz_low_flag=True
+            Bz_high_flag=True
             
-    while(added<add_pts and len(wait) > 0):
-        i = wait[0]
-        num = int(i)
-        Bz_low_num = num-1
-        Bz_high_num= num+1
-        Bz_low_flag=True
-        Bz_high_flag=True
-
-        Bx_low_num = int(num-math.sqrt(max_pool_size))
-        Bx_high_num= int(num+math.sqrt(max_pool_size))
-        Bx_low_flag=True
-        Bx_high_flag=True
-
-        while(Bz_low_flag or Bz_high_flag or Bx_low_flag or Bx_high_flag):
-            if(Bz_low_flag):
-                if(Bz_low_num<=0 or Bz_low_num % math.sqrt(max_pool_size)==math.sqrt(max_pool_size)-1):
-                    Bz_low_flag=False
-                elif(Bz_low_num not in old_pool):
-                    bisect.insort(old_pool,Bz_low_num)
-                    Bz_low_flag=False
-                else:
-                    Bz_low_num-=1
-            if(Bz_high_flag):
-                if(Bz_high_num>=max_pool_size or Bz_high_num % math.sqrt(max_pool_size)==0):
-                    Bz_high_flag=False
-                elif(Bz_high_num not in old_pool):
-                    bisect.insort(old_pool, Bz_high_num)
-                    Bz_high_flag=False
-                else:
-                    Bz_high_num+=1
-            if(Bx_low_flag):
-                if(Bx_low_num<=0):
-                    Bx_low_flag=False
-                elif(Bx_low_num not in old_pool):
-                    bisect.insort(old_pool, Bx_low_num)
-                    Bx_low_flag=False
-                else:
-                    Bx_low_num-=int(math.sqrt(max_pool_size))
-            if(Bx_high_flag):
-                if(Bx_high_num>=max_pool_size or Bx_high_num % math.sqrt(max_pool_size)==0):
-                    Bx_high_flag=False
-                elif(Bx_high_num not in old_pool):
-                    bisect.insort(old_pool, Bx_high_num)
-                    Bx_high_flag=False
-                else:
-                    Bx_high_num+=int(math.sqrt(max_pool_size))
-                    
-            added=added+4
+            Bx_low_num = int(num-math.sqrt(max_pool_size))
+            Bx_high_num= int(num+math.sqrt(max_pool_size))
+            Bx_low_flag=True
+            Bx_high_flag=True
+            
+            while(Bz_low_flag or Bz_high_flag or Bx_low_flag or Bx_high_flag):
+                if(Bz_low_flag):
+                    if(Bz_low_num<=0 or Bz_low_num % math.sqrt(max_pool_size)==math.sqrt(max_pool_size)-1):
+                        Bz_low_flag=False
+                    elif(Bz_low_num not in old_pool):
+                        bisect.insort(old_pool,Bz_low_num)
+                        Bz_low_flag=False
+                    else:
+                        Bz_low_num-=1
+                if(Bz_high_flag):
+                    if(Bz_high_num>=max_pool_size or Bz_high_num % math.sqrt(max_pool_size)==0):
+                        Bz_high_flag=False
+                    elif(Bz_high_num not in old_pool):
+                        bisect.insort(old_pool, Bz_high_num)
+                        Bz_high_flag=False
+                    else:
+                        Bz_high_num+=1
+                if(Bx_low_flag):
+                    if(Bx_low_num<=0):
+                        Bx_low_flag=False
+                    elif(Bx_low_num not in old_pool):
+                        bisect.insort(old_pool, Bx_low_num)
+                        Bx_low_flag=False
+                    else:
+                        Bx_low_num-=int(math.sqrt(max_pool_size))
+                if(Bx_high_flag):
+                    if(Bx_high_num>=max_pool_size or Bx_high_num % math.sqrt(max_pool_size)==0):
+                        Bx_high_flag=False
+                    elif(Bx_high_num not in old_pool):
+                        bisect.insort(old_pool, Bx_high_num)
+                        Bx_high_flag=False
+                    else:
+                        Bx_high_num+=int(math.sqrt(max_pool_size))    
                     
     return old_pool
 
 def main():
-    ##############################################setup########################################################
+    ############################################## SETUP ########################################################
     get_dataset = auto_encoder.get_dataset
     data_2 = '2_qubit_crit_data_1.npz'
     data_4 = '4_qubit_crit_data_1.npz'
     data_6 = '6_qubit_crit_data_1.npz'
     data_7 = '7_qubit_crit_data_1.npz'
     data_8 = '8_qubit_crit_data.npz'
-    # data_9 = '9_qubit_crit_data.npz'
 
     v_data_2 = '2_qubit_val_data.npz'
     v_data_4 = '4_qubit_val_data.npz'
     v_data_7 = '7_qubit_val_data.npz'
 
-    #     val_data_9 = get_dataset(data_9, 9, pool_size)
+    data_3 = '3_qubit_test_data.npz'
+    data_5 = '5_qubit_test_data.npz'
+    data_10 = '10_qubit_test_data.npz'
 
     validation_n_sizes = [6,8]
     mps_size = 5
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     model = auto_encoder.MPS_autoencoder(mps_size = mps_size).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
@@ -167,11 +164,12 @@ def main():
     val_size = 1089
 
     pts = seed(pool_size)
-
     error_p = []
-
     magnetization_6 = []
     wave_func_6 = []
+    final_weights = []
+    final_weight_grads = []
+    final_bias_grads = []
 
     val_data_2 = get_dataset(v_data_2, 2, val_size)
     val_data_4 = get_dataset(v_data_4, 4, val_size)
@@ -179,26 +177,33 @@ def main():
     val_data_6 = get_dataset(data_6, 6, pool_size)
     val_data_8 = get_dataset(data_8, 8, 2500)
 
+
+    test_data_3 = get_dataset(data_3, 3, pool_size)
+    test_data_5 = get_dataset(data_5, 5, 2500)
+    test_data_10 = get_dataset(data_10, 10, 100)
+
     val_datasets = [val_data_6, val_data_8, val_data_2, val_data_4, val_data_7] # val_data_9
 
     val_loaders = [DataLoader(x, batch_size = 10, num_workers=5) for x in val_datasets]
 
+
     val_6 = next(iter(val_loaders[0]))
     val_8 = next(iter(val_loaders[1]))
-    #val_9 = next(iter(val_loaders[2]))
     val_2 = next(iter(val_loaders[2]))
     val_4 = next(iter(val_loaders[3]))
     val_7 = next(iter(val_loaders[4]))
 
-    stop = .05
+    stop = 500
     runs = 0
-    prev_err = 999
-    increase_points=5 
+    increase_points = 5
     
     ###################################################Active learning########################################################
     
     while(True):
         runs = runs+1
+        if(runs % 10 == 0):
+            increase_points +=  1
+
 
         training_data_2 = auto_encoder.get_dataset_active(data_2,2,pool_size, pts)
         training_data_4 = auto_encoder.get_dataset_active(data_4,4,pool_size, pts)
@@ -247,8 +252,12 @@ def main():
                 temp += loss.item()
             temp = temp / (len(train_loader)) 
 
-        mag_dat = [training_data_2,training_data_4,val_data_6,training_data_7, val_data_8]#, val_data_9]
-        mag_loaders = [DataLoader(x, batch_size = len(val_data_6), num_workers=5) for x in mag_dat]
+        print(model)    
+
+        data_sizes = [2,3,4,5,6,7,8,10]
+
+        mag_dat = [val_data_2, test_data_3, val_data_4, test_data_5, val_data_6,val_data_7, val_data_8, test_data_10]
+        mag_loaders = [DataLoader(x, batch_size = 10000, num_workers=5) for x in mag_dat]
 
         model.eval()
         with torch.no_grad():
@@ -266,14 +275,18 @@ def main():
 
                 n_systems[sys_size] = (wave_functions,true_wave)
 
-        data_y_6 = n_systems[6][0][0].numpy()
-        data_y_6_t = n_systems[6][1][0].numpy()
 
+        data_y_6 = n_systems[6][0][0].numpy()        
+        data_y_6_t = n_systems[6][1][0].numpy()
         vec_6 = seq_to_magnetization(seq_gen(6),6).reshape((64,1))
         mag_6 = np.squeeze((np.power(data_y_6,2) @ vec_6))
         mag_6_t = np.squeeze((np.power(data_y_6_t,2) @ vec_6))
 
         magnetization_6.append(mag_6)
+
+        final_weights.append(model.encoder[6].weight)
+        final_weight_grads.append(model.encoder[6].weight.grad)
+        final_bias_grads.append(model.encoder[6].bias.grad)
 
         error_pts = error_points(data_y_6, data_y_6_t, increase_points)
         print("ERROR POINTS:")
@@ -281,32 +294,41 @@ def main():
 
         error_p.append(error_data(data_y_6,data_y_6_t))
 
-        if(mean_error((data_y_6,data_y_6_t) - prev_err)/prev_err > .05):
-            pts = expand_pool(pts, error_pts, pool_size, increase_points)
+        new_err = mean_error(data_y_6,data_y_6_t)
+        new_diff = max_error(data_y_6,data_y_6_t) - new_err 
+
+        if(len(pts)<stop):
+            pts = expand_pool(pts, error_pts, pool_size)
             print("NEW SET: ")
             print(pts)
             print()
             print("_________________________________")
-
+            
+            
         else:
+
             break
 
 ##################################################Save Results of training###############################################
     from tempfile import TemporaryFile
-    outfile = TemporaryFile()
-    x = np.arange(10)
-    np.save(outfile, x)
-    _ = outfile.seek(0) 
-    np.load(outfile)
-    with open('magnetization_6_2.npy', 'wb') as f:
+
+    with open('magnetization_6.npy', 'wb') as f:
         np.save(f, magnetization_6)
 
-    with open('pts_2.npy', 'rb') as f:
+    with open('pts.npy', 'wb') as f:
         np.save(f, pts)   
 
-    with open('error_p_2.npy', 'rb') as f:
+    with open('error_p.npy', 'wb') as f:
         np.save(f,error_p)
-        
+
+    with open('final_weights.npy','wb') as f:
+        np.save(f, final_weights)
+
+    with open('final_grads.npy','wb') as f:
+        np.save(f, final_grads)
+
+    torch.save(mag_loaders, 'mag_loaders.pth')    
+    torch.save(model.state_dict(), "Active.pt")
         
 main()
         
