@@ -1,0 +1,15 @@
+Parallel Hamiltonian Solver
+
+Two modes: CSV mode (takes parameters from file of J,Bx,Bz)
+Usage: ./matgen <num_qbits> range <j> <num_bx> <init_bx> <stop_bx> <num_bz> <init_bz> <stop_bz>
+Usage: ./matgen <num_qbits> csv <filename>
+
+Optional Arguments:
+--save-components-ascii        : saves J, Bx, Bz as human-readable files.
+--save-components-petsc        : saves J, Bx, Bz as PETSC-readable files.
+--print-eigenvalue-information : Prints additional info for each eigenvalue.
+--run-performance-metrics     : show performance metrics after solve.
+--perform-eigenvalue-check    : ensure the matrix was diagonalized correctly by checking that mat * eigvec = lambda * eigvec.
+--verbose                     : print information during matrix generation.
+--file=<filestr>              : saves eigenset output to a different file.
+--1d                          : generate using a 1D lattice instead of the square lattice [BETA]
