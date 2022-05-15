@@ -16,16 +16,15 @@ from ray.tune.schedulers import ASHAScheduler
 
 
 def seed(num_samples):
-    pts = []
-    i = 0
-    it1 = int(math.sqrt(num_samples)/10)
-    it2 = int((num_samples/10) - math.sqrt(num_samples))
-    for j in range (10):
-        for k in range(10):
-            pts.append(i)
-            i+=it1
-        i+=it2
-    return pts
+    sampler = qmc.LatinHypercube(d=2)
+    sample = sampler.random(n=100)
+    bx, bz = np.squeeze(np.split(sample,2, axis = 1))
+    bx = [int(i*num) for i in bx]
+    bz = [int(i*num) for i in bz]
+    array = []
+    for i in range (100):
+        array.append(bx[i]*num+bz[i])
+    return array
 
 
 def seq_to_magnetization(arr_seq, num_qubits):
@@ -52,24 +51,29 @@ def seq_gen(num_q):
                 temp.append(i+each)
         return temp 
 
-    
 def error_points(predicted, truth, num):
-    diffs = abs((predicted+1) - (truth+1))/(truth+1)
-    array = np.mean(diffs, axis=1)
-    points = (-np.asarray(array)).argsort()[:num]
+    pred = np.sum(predicted,axis=1)
+    tru = np.sum(truth,axis=1)
+    diffs = abs(((pred+1) - (tru+1))/(tru+1))
+    points = (-np.asarray(diffs)).argsort()[:num]
     return points
 
 def mean_error(predicted, truth):
-    diffs = abs((predicted+1) - (truth+1))/(truth+1)
-    return np.mean(np.mean(diffs, axis=1)) 
+    pred = np.sum(predicted,axis=1)
+    tru = np.sum(truth,axis=1)
+    diffs = abs(((pred+1) - (tru+1))/(tru+1))
+    return np.mean(diffs) 
 
 def max_error(predicted, truth):
-    diffs = abs((predicted+1) - (truth+1))/(truth+1)
-    array = np.mean(diffs, axis=1)
-    return np.sort(array)[np.size(array)-1]
+    pred = np.sum(predicted,axis=1)
+    tru = np.sum(truth,axis=1)
+    diffs = abs((pred+1) - (tru+1))/(tru+1)
+    return np.sort(diffs)[np.size(diffs)-1]
 
-def error_data(mag, mag_t):
-    diffs = abs(((mag+1) - (mag_t+1))/(mag_t+1))
+def error_data(predicted, truth):
+    pred = np.sum(predicted,axis=1)
+    tru = np.sum(truth,axis=1)
+    diffs = abs(((pred+1) - (tru+1))/(tru+1))
     return np.mean(diffs, axis=1)
 
 def print_points(data1, qubits, error_points):    
