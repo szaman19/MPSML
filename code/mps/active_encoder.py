@@ -150,10 +150,20 @@ def main():
     v_data_2 = '2_qubit_val_data.npz'
     v_data_4 = '4_qubit_val_data.npz'
     v_data_7 = '7_qubit_val_data.npz'
+    v_data_6 = '6_qubit_val_data.npz'
 
     data_3 = '3_qubit_test_data.npz'
     data_5 = '5_qubit_test_data.npz'
     data_10 = '10_qubit_test_data.npz'
+
+    t_data_2 = '2_qubit_test_data.npz'
+    t_data_4 = '4_qubit_test_data.npz'
+    t_data_7 = '7_qubit_test_data.npz'
+    t_data_6 = '6_qubit_test_data.npz'
+    t_data_8 = '8_qubit_test_data.npz'
+
+
+    #     val_data_9 = get_dataset(data_9, 9, pool_size)
 
     validation_n_sizes = [6,8]
     mps_size = 5
@@ -165,26 +175,33 @@ def main():
     val_sizes = [6,8,2,4,7]
 
     pool_size = 10000
+
     val_size = 1089
 
-    pts = seed(pool_size)
+    pts = seed2(100)
     error_p = []
     magnetization_6 = []
     wave_func_6 = []
     final_weights = []
-    final_weight_grads = []
-    final_bias_grads = []
 
     val_data_2 = get_dataset(v_data_2, 2, val_size)
     val_data_4 = get_dataset(v_data_4, 4, val_size)
     val_data_7 = get_dataset(v_data_7, 7, val_size)
-    val_data_6 = get_dataset(data_6, 6, pool_size)
+    val_data_6 = get_dataset(v_data_6, 6, 2500)
     val_data_8 = get_dataset(data_8, 8, 2500)
+
+    active_val_6 = get_dataset(data_6, 6, 10000)
 
 
     test_data_3 = get_dataset(data_3, 3, pool_size)
     test_data_5 = get_dataset(data_5, 5, 2500)
     test_data_10 = get_dataset(data_10, 10, 100)
+    test_data_2 = get_dataset(t_data_2, 2, 1681)
+    test_data_4 = get_dataset(t_data_4, 4, 1681)
+    test_data_7 = get_dataset(t_data_7, 7, 1681)
+    test_data_6 = get_dataset(t_data_6, 6, 1681)
+    test_data_8 = get_dataset(t_data_8, 8, 1681)
+
 
     val_datasets = [val_data_6, val_data_8, val_data_2, val_data_4, val_data_7] # val_data_9
 
@@ -200,14 +217,13 @@ def main():
     stop = 500
     runs = 0
     increase_points = 5
+    sizes = []
     
     ###################################################Active learning########################################################
     
     while(True):
         runs = runs+1
-        if(runs % 10 == 0):
-            increase_points +=  1
-
+        increase_points = 4 + len(pts)/100   
 
         training_data_2 = auto_encoder.get_dataset_active(data_2,2,pool_size, pts)
         training_data_4 = auto_encoder.get_dataset_active(data_4,4,pool_size, pts)
@@ -223,6 +239,8 @@ def main():
         print("Training Validation ", runs)
 
         model, tot_err, val_err, t_errs, val_errs = auto_encoder.mps_fit(device, model, optimizer, mps_size, training_loaders, train_sizes, val_loaders, val_sizes) 
+
+        sizes.append(len(pts))    
 
         print("VALIDATION LOSS ITERATION: ", runs)
         val_data = [(val_6,6),(val_8,8),(val_2,2),(val_4,4),(val_7,7)]
@@ -260,7 +278,7 @@ def main():
 
         data_sizes = [2,3,4,5,6,7,8,10]
 
-        mag_dat = [val_data_2, test_data_3, val_data_4, test_data_5, val_data_6,val_data_7, val_data_8, test_data_10]
+        mag_dat = [test_data_2, test_data_3, test_data_4, test_data_5, active_val_6,test_data_7, test_data_8, test_data_10]
         mag_loaders = [DataLoader(x, batch_size = 10000, num_workers=5) for x in mag_dat]
 
         model.eval()
@@ -289,8 +307,6 @@ def main():
         magnetization_6.append(mag_6)
 
         final_weights.append(model.encoder[6].weight)
-        final_weight_grads.append(model.encoder[6].weight.grad)
-        final_bias_grads.append(model.encoder[6].bias.grad)
 
         error_pts = error_points(data_y_6, data_y_6_t, increase_points)
         print("ERROR POINTS:")
@@ -298,20 +314,17 @@ def main():
 
         error_p.append(error_data(data_y_6,data_y_6_t))
 
-        new_err = mean_error(data_y_6,data_y_6_t)
-        new_diff = max_error(data_y_6,data_y_6_t) - new_err 
-
         if(len(pts)<stop):
             pts = expand_pool(pts, error_pts, pool_size)
             print("NEW SET: ")
             print(pts)
             print()
             print("_________________________________")
-            
-            
+            prev_err = new_err
+            prev_diff = new_diff
         else:
-
             break
+
 
 ##################################################Save Results of training###############################################
     from tempfile import TemporaryFile
@@ -327,9 +340,9 @@ def main():
 
     with open('final_weights.npy','wb') as f:
         np.save(f, final_weights)
-
-    with open('final_grads.npy','wb') as f:
-        np.save(f, final_grads)
+        
+    with open('sizes.npy', 'wb') as f:
+        np.save(f, sizes)
 
     torch.save(mag_loaders, 'mag_loaders.pth')    
     torch.save(model.state_dict(), "Active.pt")
